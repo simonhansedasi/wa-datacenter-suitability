@@ -1,0 +1,14 @@
+[Unit]
+Description=Data Center Siting Briefing
+After=network.target
+
+[Service]
+User=simonhans
+WorkingDirectory=/home/simonhans/coding/datacenter_siting
+ExecStart=/home/simonhans/coding/datacenter_siting/venv/bin/python app.py
+Restart=always
+RestartSec=5
+Environment=PORT=5016
+
+[Install]
+WantedBy=multi-user.target

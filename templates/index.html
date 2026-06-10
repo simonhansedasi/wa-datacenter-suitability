@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Siting the Grid — Washington State Data Center Suitability</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --surface: #1a1a2e;
+    --border: #2e2e4a;
+    --text: #e0e0f0;
+    --muted: #8888aa;
+    --accent: #5b8dee;
+    --green: #4caf82;
+    --red: #e05c5c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Georgia', serif; line-height: 1.7; }
+  a { color: var(--accent); }
+  a:hover { text-decoration: underline; }
+
+  header {
+    max-width: 860px; margin: 0 auto; padding: 60px 24px 40px;
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 2rem; line-height: 1.25; margin-bottom: 16px; }
+  header .byline { color: var(--muted); font-size: 0.9rem; font-family: monospace; }
+  header .lede {
+    margin-top: 20px; font-size: 1.1rem; color: #c0c0d8;
+    border-left: 3px solid var(--accent); padding-left: 16px;
+  }
+
+  .section { max-width: 860px; margin: 0 auto; padding: 48px 24px; border-bottom: 1px solid var(--border); }
+  h2 { font-size: 1.4rem; margin-bottom: 12px; color: #d0d0ee; }
+  h3 { font-size: 1.1rem; margin: 28px 0 8px; color: #c0c0dd; }
+  p { margin-bottom: 14px; color: #c8c8e0; }
+  sup a { font-size: 0.75rem; }
+
+  /* ── interactive map ── */
+  .map-wrapper { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-top: 20px; }
+  #map { height: 520px; background: var(--surface); }
+
+  .controls {
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 18px 20px;
+  }
+  .controls-title {
+    font-family: monospace; font-size: 0.8rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px;
+  }
+  .slider-row {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 10px;
+  }
+  .slider-label {
+    font-family: monospace; font-size: 0.82rem; color: var(--text);
+    width: 200px; flex-shrink: 0;
+  }
+  .slider-label span { color: var(--muted); font-size: 0.75rem; }
+  input[type=range] {
+    flex: 1; accent-color: var(--accent); cursor: pointer;
+  }
+  .pct {
+    font-family: monospace; font-size: 0.82rem; color: var(--accent);
+    width: 42px; text-align: right; flex-shrink: 0;
+  }
+  .map-note { font-size: 0.78rem; color: var(--muted); margin-top: 10px; font-family: monospace; }
+
+  /* ── findings grid ── */
+  .findings-grid { display: grid; grid-template-columns: 1fr; gap: 28px; margin-top: 24px; }
+  .finding {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 20px;
+  }
+  .finding .number { font-family: monospace; font-size: 2rem; color: var(--border); float: left; margin-right: 10px; line-height: 1; }
+  .finding h3 { margin-top: 0; font-size: 1rem; }
+  .finding p { font-size: 0.9rem; margin-bottom: 0; }
+
+  /* ── score table ── */
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.88rem; }
+  th { background: var(--surface); color: var(--muted); font-family: monospace;
+       font-weight: normal; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: #c8c8e0; }
+  tr:last-child td { border-bottom: none; }
+  .score-cell { font-family: monospace; font-weight: bold; }
+  .score-hi { color: var(--green); }
+  .score-lo { color: var(--red); }
+  .score-mid { color: #e0c060; }
+  .detail-col { display: none; }
+  .table-expanded .detail-col { display: table-cell; }
+  .expand-btn {
+    font-size: 0.78rem; font-family: monospace; cursor: pointer;
+    background: var(--surface); color: var(--muted); border: 1px solid var(--border);
+    border-radius: 4px; padding: 3px 10px; margin-bottom: 6px;
+  }
+  .expand-btn:hover { color: #c8c8e0; }
+
+  /* ── map images ── */
+  .img-full { width: 100%; margin-top: 20px; }
+  .img-full img { width: 100%; border-radius: 4px; border: 1px solid var(--border); display: block; }
+  .map-img { width: 100%; border-radius: 4px; margin-top: 16px; border: 1px solid var(--border); }
+  .img-caption { font-size: 0.8rem; color: var(--muted); margin-top: 6px; font-family: monospace; }
+
+  /* ── data sources ── */
+  .sources { font-size: 0.85rem; }
+  .sources dt { color: var(--text); font-weight: bold; margin-top: 12px; }
+  .sources dd { color: var(--muted); margin-left: 16px; }
+
+  footer { max-width: 860px; margin: 0 auto; padding: 32px 24px 64px; }
+  footer p { font-size: 0.8rem; color: var(--muted); font-family: monospace; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Siting the Grid: A Geospatial Case for Smarter Data Center Location in Washington State</h1>
+  <p class="byline">Simon-Hans Edasi &nbsp;/&nbsp; Edasi Motlev LLC &nbsp;/&nbsp; June 2026</p>
+  <p class="lede">
+    Washington's data center industry has clustered in Grant County and the Columbia Basin
+    for one reason: cheap hydropower and proximity to high-voltage transmission lines.
+    That single-variable optimization is now colliding with water scarcity, community
+    opposition, and grid saturation. This analysis quantifies what a more defensible
+    siting decision looks like.
+  </p>
+</header>
+
+<!-- ── INTERACTIVE MAP ──────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Composite Siting Suitability Explorer</h2>
+  <p>
+    Each cell is a 0.15-degree grid square (~14 km) scored on five normalized indicators.
+    Adjust the weights below to see how priorities change the siting landscape.
+    Existing and proposed data center locations are shown as markers.
+  </p>
+  <div class="map-wrapper">
+    <div id="map"></div>
+    <div class="controls">
+      <div class="controls-title">Indicator weights &mdash; drag to adjust, scores auto-normalize</div>
+
+      <div class="slider-row">
+        <div class="slider-label">Transmission proximity <span>(grid access)</span></div>
+        <input type="range" id="w-tx" min="0" max="100" value="40">
+        <div class="pct" id="pct-tx">40%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Water availability <span>(annual precip)</span></div>
+        <input type="range" id="w-water" min="0" max="100" value="35">
+        <div class="pct" id="pct-water">35%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Community burden <span>(EJScreen index, inverted)</span></div>
+        <input type="range" id="w-ej" min="0" max="100" value="25">
+        <div class="pct" id="pct-ej">25%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Seismic safety <span>(inverse PGA)</span></div>
+        <input type="range" id="w-seismic" min="0" max="100" value="0">
+        <div class="pct" id="pct-seismic">0%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Flood safety <span>(outside FEMA SFHA)</span></div>
+        <input type="range" id="w-flood" min="0" max="100" value="0">
+        <div class="pct" id="pct-flood">0%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Contamination <span>(distance from Superfund NPL)</span></div>
+        <input type="range" id="w-contam" min="0" max="100" value="0">
+        <div class="pct" id="pct-contam">0%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Waterway safety <span>(distance from major river)</span></div>
+        <input type="range" id="w-waterway" min="0" max="100" value="0">
+        <div class="pct" id="pct-waterway">0%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Geothermal opportunity <span>(IHFC 2024 heat flow)</span></div>
+        <input type="range" id="w-geo" min="0" max="100" value="0">
+        <div class="pct" id="pct-geo">0%</div>
+      </div>
+
+      <div class="map-note">
+        Score 0&ndash;1 &nbsp;&bull;&nbsp; green = more suitable &nbsp;&bull;&nbsp;
+        red = less suitable &nbsp;&bull;&nbsp;
+        cyan circle = recommended zone (&ge;0.75) &nbsp;&bull;&nbsp;
+        white diamond = existing DC &nbsp;&bull;&nbsp;
+        outline diamond = proposed DC
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── KEY FINDINGS ─────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Key Findings</h2>
+
+  <div class="findings-grid">
+    <div class="finding">
+      <div class="number">1</div>
+      <h3>The Quincy corridor is grid-optimal but water-constrained</h3>
+      <p>
+        Grant County's existing cluster scores near-perfect on transmission proximity
+        (tx_score &gt; 0.98) but 0.19 on water availability — semi-arid at ~640 mm/yr.
+        The Columbia Basin's water allocation is effectively fully subscribed.
+        Grant County PUD's own administrator has stated that water and power
+        are <a href="https://www.npr.org/2025/08/17/nx-s1-5501579/washington-hydropower-data-center-boom-sustainability-climate-change">"maxed out."</a>
+      </p>
+    </div>
+    <div class="finding">
+      <div class="number">2</div>
+      <h3>A 30% better composite score exists 50&ndash;80 km west</h3>
+      <p>
+        The Digital Realty proposed site in the Cascade foothills scores 0.783 vs. 0.599
+        for the Quincy cluster — same grid access class, but annual precipitation of
+        1,441 mm/yr vs. 640 mm/yr. The gap closes when seismic risk is added (Puget Sound
+        basin PGAM is 3&ndash;5x eastern WA), pointing to the Kittitas/Ellensburg corridor
+        as the practical sweet spot.
+      </p>
+    </div>
+    <div class="finding">
+      <div class="number">3</div>
+      <h3>Seismic risk partially explains the eastern WA cluster</h3>
+      <p>
+        The Puget Sound region has PGAM values of 0.5&ndash;1.0g due to Cascadia subduction
+        zone amplification and the Seattle Fault — 3&ndash;5x higher than the Columbia Basin.
+        Higher seismic hazard means higher structural cost, higher insurance, and higher
+        business continuity risk. This partly justifies the industry's eastward preference
+        independent of water.
+        (<a href="https://www.usgs.gov/programs/earthquake-hazards/2018-long-term-national-seismic-hazard-map">USGS 2018 NSHM</a>)
+      </p>
+    </div>
+    <div class="finding">
+      <div class="number">4</div>
+      <h3>25 projects canceled nationally in 2025 — water cited in &gt;40%</h3>
+      <p>
+        Canceled WA projects (Grant County expansions, Yakima Basin proposals) score
+        high on grid access but below 0.20 on water availability — consistent with their
+        documented failure reason. A pre-siting screen on the three indicators in this
+        model would have flagged every WA case as water-constrained before permitting.
+        (<a href="https://heatmap.news/politics/data-center-cancellations-2025">Heatmap News, 2025</a>)
+      </p>
+    </div>
+    <div class="finding">
+      <div class="number">5</div>
+      <h3>Three major proposed campuses are clustering in the driest cells in the state</h3>
+      <p>
+        The Tri-Cities / southeast Columbia Basin is emerging as the next data center frontier &mdash; and
+        every proposed site there scores water = 0.000, the floor of this analysis (~150&ndash;220 mm/yr).
+        Amazon's $4.8B Wallula Gap campus (554 acres, Burbank, approved February 2026),
+        Atlas Agro's $500M Richland DC1 (275 acres at Horn Rapids Road, approved December 2025), and
+        Trammell Crow's Lewis &amp; Clark Ranch campus (up to 1,000 acres, West Richland, in due diligence)
+        all fall in the same water-floor band. Composite scores range 0.506&ndash;0.583 &mdash; below Quincy.
+        The industry is moving deeper into arid eastern WA at exactly the moment the state is legislating
+        mandatory water-use reporting.
+        (<a href="https://www.datacenterdynamics.com/en/news/48bn-data-center-campus-proposed-in-walla-walla-washington/">DCD</a>,
+        <a href="https://www.tricitiesbusinessnews.com/articles/richland-oks-option-agreement-for-atlas-agro-data-center">Tri-Cities Journal</a>,
+        <a href="https://www.nbcrightnow.com/news/data-center-development-plans-underway-in-west-richland/article_d7e3db46-d624-40e5-91f1-293e336f33e2.html">NBC Right Now</a>)
+      </p>
+    </div>
+  </div>
+
+  <h3>Scores by cluster</h3>
+  <p style="font-size:0.85rem;color:var(--muted);margin-bottom:8px;">
+    Scores reflect the ~14 km grid cell containing each cluster. Composite updates live with the weight sliders above.
+  </p>
+  <button class="expand-btn" onclick="toggleTable('cluster-table',this)">+ show all scores</button>
+  <table id="cluster-table">
+    <thead>
+      <tr>
+        <th>Cluster</th>
+        <th class="detail-col">Grid access</th><th class="detail-col">Water</th><th class="detail-col">Community</th>
+        <th class="detail-col">Seismic</th><th class="detail-col">Contamination</th><th class="detail-col">Waterway</th><th class="detail-col">Geothermal</th><th>Composite</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr data-tx="0.988" data-water="0.189" data-ej="0.552" data-seismic="0.885" data-flood="1.0" data-contam="0.501" data-waterway="0.068" data-geo="0.319">
+        <td>Quincy (Grant County)</td>
+        <td class="score-cell score-hi detail-col">0.988</td>
+        <td class="score-cell score-lo detail-col">0.189</td>
+        <td class="score-cell score-mid detail-col">0.552</td>
+        <td class="score-cell score-hi detail-col">0.885</td>
+        <td class="score-cell score-mid detail-col">0.501</td>
+        <td class="score-cell score-lo detail-col">0.068</td>
+        <td class="score-cell score-lo detail-col">0.319</td>
+        <td class="score-cell score-mid composite-cell">0.563</td>
+      </tr>
+      <tr data-tx="0.985" data-water="0.293" data-ej="0.636" data-seismic="0.848" data-flood="1.0" data-contam="0.554" data-waterway="0.244" data-geo="0.318">
+        <td>Malaga / East Wenatchee</td>
+        <td class="score-cell score-hi detail-col">0.985</td>
+        <td class="score-cell score-lo detail-col">0.293</td>
+        <td class="score-cell score-mid detail-col">0.636</td>
+        <td class="score-cell score-hi detail-col">0.848</td>
+        <td class="score-cell score-mid detail-col">0.554</td>
+        <td class="score-cell score-mid detail-col">0.244</td>
+        <td class="score-cell score-lo detail-col">0.318</td>
+        <td class="score-cell score-mid composite-cell">0.610</td>
+      </tr>
+      <tr data-tx="0.968" data-water="0.743" data-ej="0.544" data-seismic="0.371" data-flood="1.0" data-contam="0.009" data-waterway="0.463" data-geo="0.257">
+        <td>Seattle downtown</td>
+        <td class="score-cell score-hi detail-col">0.968</td>
+        <td class="score-cell score-hi detail-col">0.743</td>
+        <td class="score-cell score-mid detail-col">0.544</td>
+        <td class="score-cell score-lo detail-col">0.371</td>
+        <td class="score-cell score-lo detail-col">0.009</td>
+        <td class="score-cell score-mid detail-col">0.463</td>
+        <td class="score-cell score-lo detail-col">0.257</td>
+        <td class="score-cell score-mid composite-cell">0.544</td>
+      </tr>
+      <tr data-tx="0.994" data-water="0.739" data-ej="0.109" data-seismic="0.402" data-flood="1.0" data-contam="0.028" data-waterway="0.544" data-geo="0.235">
+        <td>Tukwila corridor</td>
+        <td class="score-cell score-hi detail-col">0.994</td>
+        <td class="score-cell score-hi detail-col">0.739</td>
+        <td class="score-cell score-lo detail-col">0.109</td>
+        <td class="score-cell score-lo detail-col">0.402</td>
+        <td class="score-cell score-lo detail-col">0.028</td>
+        <td class="score-cell score-mid detail-col">0.544</td>
+        <td class="score-cell score-lo detail-col">0.235</td>
+        <td class="score-cell score-mid composite-cell">0.506</td>
+      </tr>
+      <tr data-tx="0.996" data-water="0.244" data-ej="0.877" data-seismic="1.000" data-flood="1.0" data-contam="0.145" data-waterway="0.116" data-geo="0.461">
+        <td>Liberty Lake (Spokane)</td>
+        <td class="score-cell score-hi detail-col">0.996</td>
+        <td class="score-cell score-lo detail-col">0.244</td>
+        <td class="score-cell score-hi detail-col">0.877</td>
+        <td class="score-cell score-hi detail-col">1.000</td>
+        <td class="score-cell score-mid detail-col">0.145</td>
+        <td class="score-cell score-mid detail-col">0.116</td>
+        <td class="score-cell score-mid detail-col">0.461</td>
+        <td class="score-cell score-mid composite-cell">0.605</td>
+      </tr>
+      <tr data-tx="0.968" data-water="0.743" data-ej="0.544" data-seismic="0.371" data-flood="1.0" data-contam="0.009" data-waterway="0.463" data-geo="0.257">
+        <td>Digital Realty (proposed)</td>
+        <td class="score-cell score-hi detail-col">0.968</td>
+        <td class="score-cell score-hi detail-col">0.743</td>
+        <td class="score-cell score-mid detail-col">0.544</td>
+        <td class="score-cell score-lo detail-col">0.371</td>
+        <td class="score-cell score-lo detail-col">0.009</td>
+        <td class="score-cell score-mid detail-col">0.463</td>
+        <td class="score-cell score-lo detail-col">0.257</td>
+        <td class="score-cell score-mid composite-cell">0.544</td>
+      </tr>
+      <tr data-tx="0.987" data-water="0.000" data-ej="0.446" data-seismic="0.916" data-flood="1.0" data-contam="0.014" data-waterway="0.015" data-geo="0.339">
+        <td>Wallula Gap / Burbank (proposed)</td>
+        <td class="score-cell score-hi detail-col">0.987</td>
+        <td class="score-cell score-lo detail-col">0.000</td>
+        <td class="score-cell score-mid detail-col">0.446</td>
+        <td class="score-cell score-hi detail-col">0.916</td>
+        <td class="score-cell score-lo detail-col">0.014</td>
+        <td class="score-cell score-lo detail-col">0.015</td>
+        <td class="score-cell score-lo detail-col">0.339</td>
+        <td class="score-cell score-mid composite-cell">0.465</td>
+      </tr>
+      <tr data-tx="0.996" data-water="0.000" data-ej="0.737" data-seismic="0.913" data-flood="1.0" data-contam="0.142" data-waterway="0.046" data-geo="0.342">
+        <td>Richland / Horn Rapids (proposed)</td>
+        <td class="score-cell score-hi detail-col">0.996</td>
+        <td class="score-cell score-lo detail-col">0.000</td>
+        <td class="score-cell score-mid detail-col">0.737</td>
+        <td class="score-cell score-hi detail-col">0.913</td>
+        <td class="score-cell score-mid detail-col">0.142</td>
+        <td class="score-cell score-lo detail-col">0.046</td>
+        <td class="score-cell score-lo detail-col">0.342</td>
+        <td class="score-cell score-mid composite-cell">0.522</td>
+      </tr>
+      <tr data-tx="0.930" data-water="0.000" data-ej="0.737" data-seismic="0.918" data-flood="1.0" data-contam="0.207" data-waterway="0.037" data-geo="0.560">
+        <td>West Richland / Lewis Clark Ranch (proposed)</td>
+        <td class="score-cell score-hi detail-col">0.930</td>
+        <td class="score-cell score-lo detail-col">0.000</td>
+        <td class="score-cell score-mid detail-col">0.737</td>
+        <td class="score-cell score-hi detail-col">0.918</td>
+        <td class="score-cell score-mid detail-col">0.207</td>
+        <td class="score-cell score-lo detail-col">0.037</td>
+        <td class="score-cell score-mid detail-col">0.560</td>
+        <td class="score-cell score-mid composite-cell">0.549</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:0.82rem;color:var(--muted);margin-top:10px;">
+    Note: Tukwila's community burden score (0.109) reflects Census ACS high poverty/minority rates in the
+    SR-99 industrial corridor. Grid access and water are strong, but EJ burden is the highest of any
+    active cluster in this analysis.
+  </p>
+
+  <h3 style="margin-top:40px;">Top 20 Unclaimed Site Scores</h3>
+  <p style="font-size:0.85rem;color:var(--muted);margin-bottom:8px;">
+    Grid cells with no existing or proposed data center, ranked by composite score under the current
+    weight settings. Locations are cell centroids (~14 km resolution). Updates live with the sliders above.
+  </p>
+  <button class="expand-btn" onclick="toggleTable('top-sites-table',this)">+ show all scores</button>
+  <table id="top-sites-table">
+    <thead>
+      <tr>
+        <th>Location</th>
+        <th class="detail-col">Grid access</th><th class="detail-col">Water</th><th class="detail-col">Community</th>
+        <th class="detail-col">Seismic</th><th class="detail-col">Geothermal</th><th>Composite</th>
+      </tr>
+    </thead>
+    <tbody id="top-sites-tbody">
+      <tr><td colspan="2" style="color:var(--muted);font-family:monospace;font-size:0.82rem;">Loading&hellip;</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── INDICATOR MAPS ─────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Individual Indicator Maps</h2>
+  <p>
+    Each indicator normalized 0&ndash;1 (green = favorable for siting).
+    White diamonds mark existing and proposed data center locations.
+  </p>
+  <div class="img-full">
+    <img src="/static/img/indicators.png" alt="Three indicator maps: transmission proximity, water availability, community burden">
+  </div>
+  <p class="img-caption">Left to right: transmission proximity, water availability (annual precip), community burden (Census ACS Demographic Index, inverted).</p>
+
+  <h3>Risk modifiers: seismic hazard and flood zones</h3>
+  <p>
+    Adding USGS National Seismic Hazard Model PGA values and FEMA flood zone designations
+    as risk disqualifiers shifts the picture: the Puget Sound basin drops sharply on
+    seismic score, and river corridor cells flag on flood risk.
+  </p>
+  <div class="img-full">
+    <img src="/static/img/risk_layers.png" alt="Seismic, flood, and risk-adjusted composite maps">
+  </div>
+  <p class="img-caption">Left to right: seismic safety (inverse PGAM), flood safety (outside FEMA SFHA), risk-adjusted composite (60% opportunity + 20% seismic + 20% flood).</p>
+</div>
+
+<!-- ── ENVIRONMENTAL RISK ─────────────────────────────────────────── -->
+<div class="section">
+  <h2>Environmental Risk: Contamination and Waterway Sensitivity</h2>
+  <p>
+    Two additional risk modifiers quantify environmental liability independent of water scarcity.
+    <strong>Contamination proximity</strong> scores each cell by distance to the nearest active EPA
+    Superfund National Priorities List site in Washington State. Amazon's Wallula Gap campus
+    scores 0.014 — effectively at the perimeter of the Hanford Site, the largest
+    contaminated site in the Western hemisphere.
+    <strong>Waterway sensitivity</strong> scores by distance to the nearest major regulated
+    river (Columbia, Snake, Spokane, Skagit, Yakima) — a proxy for ESA Section 7 thermal
+    discharge constraints and water withdrawal scrutiny. The same Wallula Gap site scores
+    0.015, placing it directly on the Columbia's bank.
+  </p>
+  <div class="img-full">
+    <img src="/static/img/environmental_risk.png" alt="Contamination proximity and waterway sensitivity maps">
+  </div>
+  <p class="img-caption">Left: contamination proximity (1 = far from EPA NPL Superfund site). Right: waterway sensitivity (1 = far from major regulated river). White filled = existing DC; outline = proposed.</p>
+</div>
+
+<!-- ── GEOTHERMAL ─────────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Geothermal Resource Opportunity</h2>
+  <p>
+    Surface heat flow (mW/m&sup2;) from the
+    <a href="https://www.heatflow.world/data/download">IHFC Global Heat Flow Database 2024</a>
+    (664 measured borehole sites within the Washington State bounding box)
+    is IDW-interpolated to each grid cell and normalized 0&ndash;1.
+    Higher scores indicate elevated geothermal energy potential, primarily following the
+    Cascade volcanic arc. Values are capped at the 95th percentile (162 mW/m&sup2;) to
+    prevent hydrothermal anomalies near Mount Baker (up to 5,146 mW/m&sup2;) from
+    dominating the spatial interpolation.
+  </p>
+  <p>
+    In the composite scoring, geothermal opportunity functions as an
+    <em>opportunity</em> indicator: cells adjacent to elevated heat flow can in principle
+    tap enhanced geothermal or direct-use systems to offset grid power demand.
+    The Cascade foothills score highest; the eastern Columbia Basin, where most
+    existing and proposed campuses are located, scores 0.30&ndash;0.35.
+  </p>
+  <div class="img-full">
+    <img src="/static/img/geothermal.png" alt="Geothermal heat flow map for Washington State">
+  </div>
+  <p class="img-caption">
+    Surface heat flow interpolated from 664 IHFC 2024 borehole measurements (small dots).
+    Inferno scale: 0 = low heat flow / 1 = high geothermal potential.
+    White filled = existing DC; outline = proposed.
+  </p>
+</div>
+
+<!-- ── METHODOLOGY ───────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Methodology</h2>
+  <p>
+    Analysis grid: 0.15-degree fishnet (~14 km cells) clipped to Washington State boundary.
+    974 cells total. All scores normalized 0&ndash;1 before weighting.
+  </p>
+  <dl class="sources">
+    <dt>Transmission proximity</dt>
+    <dd>
+      Distance from each cell centroid to nearest high-voltage (&#8805;100 kV) transmission
+      line. Lines sourced from
+      <a href="https://overpass-api.de/">OpenStreetMap Overpass API</a>
+      (<code>power=line</code>, voltage filter). Distances computed in UTM Zone 10N.
+      Score = 1 &minus; (dist / max_dist).
+    </dd>
+    <dt>Water availability</dt>
+    <dd>
+      30-year mean annual precipitation (1991&ndash;2020) from
+      <a href="https://open-meteo.com/en/docs/historical-weather-api">Open-Meteo Historical Weather API</a>
+      (ERA5 reanalysis). Sampled at 50 interior points, IDW-interpolated to analysis grid.
+      Score = normalized percentile rank.
+    </dd>
+    <dt>Community burden</dt>
+    <dd>
+      Demographic Index (average of poverty rate and minority rate) computed from
+      <a href="https://www.census.gov/data/developers/data-sets/acs-5year.html">US Census ACS 5-Year Estimates 2022</a>
+      (variables B17001, B02001), replicating the
+      <a href="https://www.epa.gov/ejscreen/overview-demographic-indicators-ejscreen">EPA EJScreen Demographic Index</a>
+      formula. Tract boundaries from Census TIGER/Line 2022. Score = 1 &minus; normalized index
+      (inverted: lower burden = higher score).
+    </dd>
+    <dt>Seismic safety</dt>
+    <dd>
+      Peak Ground Acceleration (PGA<sub>M</sub>) at 2% probability of exceedance in 50 years,
+      from the
+      <a href="https://earthquake.usgs.gov/ws/designmaps/asce7-22.json">USGS ASCE 7-22 design values API</a>
+      (2018 National Seismic Hazard Model, site class C). Sampled at 50 points, IDW-interpolated.
+      Score = 1 &minus; normalized PGA<sub>M</sub>.
+    </dd>
+    <dt>Flood safety</dt>
+    <dd>
+      Special Flood Hazard Area (SFHA) designation from the
+      <a href="https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28">FEMA National Flood Hazard Layer REST API</a>
+      (zones A, AE, AH, AO, AR, A99, VE, V). Queried in 40 tiles covering WA; some coastal
+      tiles unavailable due to service limits. Score = 1 if cell centroid outside SFHA, 0 if within.
+    </dd>
+    <dt>Contamination proximity</dt>
+    <dd>
+      Distance from each cell centroid to the nearest active
+      <a href="https://www.epa.gov/superfund/national-priorities-list-npl-sites-state">EPA Superfund National Priorities List (NPL)</a>
+      site in Washington State. 26 active WA sites hardcoded from the EPA state list;
+      coordinates are approximate site centroids. Score = normalized distance
+      (0 = adjacent to NPL site, 1 = farthest cell in state).
+      Notable: the Hanford Site (46.55&deg;N, 119.53&deg;W) — the largest
+      contaminated site in the Western hemisphere — sits immediately adjacent to the
+      Tri-Cities proposed campus cluster.
+    </dd>
+    <dt>Waterway sensitivity</dt>
+    <dd>
+      Distance from each cell centroid to the nearest sample point along a major regulated
+      Washington waterway: Columbia River (20 pts), Snake River (5 pts), Spokane River (4 pts),
+      Skagit River (6 pts), Yakima River (4 pts). Proximity is a proxy for
+      <a href="https://www.epa.gov/cwa-404/section-7-esa-consultations-army-corps-engineers">ESA Section 7</a>
+      thermal discharge constraints and water withdrawal regulatory scrutiny under
+      Endangered Species Act salmon protections. Score = normalized distance
+      (0 = adjacent to major river, 1 = farthest cell in state).
+    </dd>
+    <dt>Geothermal opportunity</dt>
+    <dd>
+      Surface heat flow (mW/m&sup2;) from the
+      <a href="https://www.heatflow.world/data/download">IHFC Global Heat Flow Database 2024</a>
+      (Lucazeau et al., DOI 10.5880/fidgeo.2024.014).
+      664 borehole measurements within the Washington State bounding box are IDW-interpolated
+      (k=8 neighbors, power=2) to each grid cell centroid using EPSG:32610 metric coordinates.
+      Raw values are capped at the 95th percentile (162 mW/m&sup2;) before interpolation to
+      prevent hydrothermal anomalies near Mount Baker (up to 5,146 mW/m&sup2;) from dominating.
+      Score = interpolated heat flow / maximum interpolated value
+      (0 = low geothermal potential, 1 = high).
+    </dd>
+  </dl>
+
+  <p style="margin-top:20px; font-size:0.85rem; color: var(--muted);">
+    Full methodology and reproducible notebooks available at
+    <a href="https://github.com/simonhansedasi/datacenter_siting">github.com/simonhansedasi/datacenter_siting</a>.
+    Analysis uses Python / GeoPandas / Matplotlib. No proprietary data.
+  </p>
+</div>
+
+<!-- ── FOOTER ────────────────────────────────────────────────────────── -->
+<footer>
+  <p>
+    &copy; 2026 Simon-Hans Edasi / Edasi Motlev LLC &nbsp;&bull;&nbsp;
+    Data: OSM (ODbL), US Census (public domain), Open-Meteo ERA5 (CC-BY 4.0),
+    USGS (public domain), FEMA NFHL (public domain) &nbsp;&bull;&nbsp;
+    <a href="mailto:simonhansedasi@gmail.com">Contact</a>
+  </p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── Globals ───────────────────────────────────────────────────────────
+let allCells  = [];   // {minLat,maxLat,minLng,maxLng,lat,lng,tx,water,ej,seismic,flood}
+let dcPoints  = [];   // {lat,lng} for all existing+proposed DCs
+
+// ── Leaflet map init ──────────────────────────────────────────────────
+const map = L.map('map', {
+  center: [47.3, -120.5],
+  zoom: 7,
+  zoomControl: true,
+  attributionControl: false
+});
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  maxZoom: 14
+}).addTo(map);
+
+// ── Color scale: red (0) → yellow (0.5) → green (1) ──────────────────
+function scoreColor(s) {
+  s = Math.max(0, Math.min(1, s));
+  let r, g, b;
+  if (s < 0.5) {
+    const t = s * 2;
+    r = Math.round(215 + (252 - 215) * t);
+    g = Math.round(48  + (215 - 48)  * t);
+    b = Math.round(39  + (148 - 39)  * t);
+  } else {
+    const t = (s - 0.5) * 2;
+    r = Math.round(252 + (26  - 252) * t);
+    g = Math.round(215 + (152 - 215) * t);
+    b = Math.round(148 + (80  - 148) * t);
+  }
+  return `rgb(${r},${g},${b})`;
+}
+
+// ── Grid layer ────────────────────────────────────────────────────────
+let gridLayer = null;
+let gridData  = null;
+
+function getWeights() {
+  const ids = ['tx', 'water', 'ej', 'seismic', 'flood', 'contam', 'waterway', 'geo'];
+  const raw = ids.map(id => parseFloat(document.getElementById('w-' + id).value));
+  const total = raw.reduce((a, b) => a + b, 0) || 1;
+  const pcts  = raw.map(v => v / total);
+  ids.forEach((id, i) => {
+    document.getElementById('pct-' + id).textContent = Math.round(pcts[i] * 100) + '%';
+  });
+  return pcts;
+}
+
+const RECOMMEND_THRESHOLD = 0.75;
+const recommendLayer = L.layerGroup().addTo(map);
+
+function cellStyle(score) {
+  return {
+    fillColor:   scoreColor(score),
+    fillOpacity: 0.72,
+    color:       'transparent',
+    weight:      0
+  };
+}
+
+function cellCentroid(feature) {
+  const coords = feature.geometry.coordinates[0];
+  const lats = coords.map(c => c[1]);
+  const lngs = coords.map(c => c[0]);
+  return [
+    (Math.min(...lats) + Math.max(...lats)) / 2,
+    (Math.min(...lngs) + Math.max(...lngs)) / 2
+  ];
+}
+
+function updateMap() {
+  if (!gridLayer) return;
+  const [wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo] = getWeights();
+  recommendLayer.clearLayers();
+  updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo);
+  updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo);
+  gridLayer.eachLayer(layer => {
+    const p = layer.feature.properties;
+    const score = wTx       * p.tx_score
+                + wWater    * p.water_score
+                + wEj       * p.ej_score
+                + wSeis     * p.seismic_score
+                + wFlood    * p.flood_score
+                + wContam   * (p.contamination_score || 0)
+                + wWaterway * (p.waterway_score || 0)
+                + wGeo      * (p.geothermal_score  || 0);
+    layer.setStyle(cellStyle(score));
+    if (score >= RECOMMEND_THRESHOLD) {
+      const ll = cellCentroid(layer.feature);
+      L.circleMarker(ll, {
+        radius: 7, color: '#ffffff', weight: 1.5,
+        fillColor: '#00cfff', fillOpacity: 0.6
+      }).addTo(recommendLayer);
+    }
+  });
+}
+
+fetch('/static/grid_scores.geojson')
+  .then(r => r.json())
+  .then(data => {
+    gridData = data;
+    data.features.forEach(feat => {
+      const p = feat.properties;
+      const coords = feat.geometry.coordinates[0];
+      const lats = coords.map(c => c[1]);
+      const lngs = coords.map(c => c[0]);
+      allCells.push({
+        minLat: Math.min(...lats), maxLat: Math.max(...lats),
+        minLng: Math.min(...lngs), maxLng: Math.max(...lngs),
+        lat: (Math.min(...lats) + Math.max(...lats)) / 2,
+        lng: (Math.min(...lngs) + Math.max(...lngs)) / 2,
+        tx: p.tx_score, water: p.water_score, ej: p.ej_score,
+        seismic: p.seismic_score, flood: p.flood_score,
+        contam: p.contamination_score || 0,
+        waterway: p.waterway_score || 0,
+        geo: p.geothermal_score || 0
+      });
+    });
+    gridLayer = L.geoJSON(data, {
+      style: feat => cellStyle(0)
+    }).addTo(map);
+    updateMap();
+  });
+
+// ── Transmission lines ────────────────────────────────────────────────
+function txStyle(feat) {
+  const raw = (feat.properties.voltage || '').split(';')[0];
+  const v = parseInt(raw, 10) || 0;
+  if (v >= 345000) return { color: '#f5c518', weight: 1.8, opacity: 0.75 };
+  if (v >= 230000) return { color: '#7eb8d4', weight: 1.2, opacity: 0.55 };
+  return                   { color: '#9aaabb', weight: 1.0, opacity: 0.55 };
+}
+
+fetch('/static/transmission_wa.geojson')
+  .then(r => r.json())
+  .then(data => {
+    L.geoJSON(data, { style: txStyle, interactive: false }).addTo(map);
+  });
+
+// ── Data center markers ───────────────────────────────────────────────
+function dcIcon(source) {
+  const fill = source === 'proposed' ? 'transparent' : 'white';
+  const border = source === 'proposed' ? '2px solid #111' : '1.5px solid #333';
+  return L.divIcon({
+    html: `<div style="width:12px;height:12px;background:${fill};border:${border};transform:rotate(45deg);margin:-5px"></div>`,
+    className: '', iconAnchor: [6, 6]
+  });
+}
+
+fetch('/static/datacenters.geojson')
+  .then(r => r.json())
+  .then(data => {
+    data.features.forEach(feat => {
+      dcPoints.push({ lng: feat.geometry.coordinates[0], lat: feat.geometry.coordinates[1] });
+    });
+    L.geoJSON(data, {
+      pointToLayer: (feat, latlng) => L.marker(latlng, { icon: dcIcon(feat.properties.source) }),
+      onEachFeature: (feat, layer) => {
+        layer.bindTooltip(
+          `<b>${feat.properties.name}</b><br>${feat.properties.operator}`,
+          { className: 'dc-tooltip' }
+        );
+      }
+    }).addTo(map);
+  });
+
+// ── Transmission legend ───────────────────────────────────────────────
+const txLegend = L.control({ position: 'bottomleft' });
+txLegend.onAdd = () => {
+  const div = L.DomUtil.create('div');
+  div.style.cssText = 'background:#1a1a2e;border:1px solid #2e2e4a;padding:10px 14px;font-family:monospace;font-size:0.75rem;color:#c8c8e0;line-height:1.9;';
+  div.innerHTML = `
+    <div style="color:#8888aa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Transmission</div>
+    <div><span style="display:inline-block;width:28px;height:3px;background:#f5c518;vertical-align:middle;margin-right:8px;"></span>345+ kV</div>
+    <div><span style="display:inline-block;width:28px;height:2px;background:#7eb8d4;vertical-align:middle;margin-right:8px;"></span>230 kV</div>
+    <div><span style="display:inline-block;width:28px;height:2px;background:#9aaabb;vertical-align:middle;margin-right:8px;"></span>115 kV</div>
+  `;
+  return div;
+};
+txLegend.addTo(map);
+
+// ── Table expand/collapse ─────────────────────────────────────────────
+function toggleTable(tableId, btn) {
+  const tbl = document.getElementById(tableId);
+  const expanded = tbl.classList.toggle('table-expanded');
+  btn.textContent = expanded ? '- hide scores' : '+ show all scores';
+}
+
+// ── Table update ─────────────────────────────────────────────────────
+function scoreClass(s) {
+  return s >= 0.70 ? 'score-hi' : s >= 0.55 ? 'score-mid' : 'score-lo';
+}
+
+function updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo) {
+  document.querySelectorAll('tr[data-tx]').forEach(row => {
+    const score = wTx       * parseFloat(row.dataset.tx)
+                + wWater    * parseFloat(row.dataset.water)
+                + wEj       * parseFloat(row.dataset.ej)
+                + wSeis     * parseFloat(row.dataset.seismic)
+                + wFlood    * parseFloat(row.dataset.flood)
+                + wContam   * parseFloat(row.dataset.contam   || 0)
+                + wWaterway * parseFloat(row.dataset.waterway || 0)
+                + wGeo      * parseFloat(row.dataset.geo      || 0);
+    const cell = row.querySelector('.composite-cell');
+    cell.textContent = score.toFixed(3);
+    cell.className = `score-cell ${scoreClass(score)} composite-cell`;
+  });
+}
+
+// ── Top unclaimed sites ───────────────────────────────────────────────
+function updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo) {
+  const tbody = document.getElementById('top-sites-tbody');
+  if (!tbody || allCells.length === 0) return;
+  const top = allCells
+    .filter(c => !dcPoints.some(p =>
+      p.lat >= c.minLat && p.lat <= c.maxLat &&
+      p.lng >= c.minLng && p.lng <= c.maxLng
+    ))
+    .map(c => ({
+      ...c,
+      composite: wTx * c.tx + wWater * c.water + wEj * c.ej + wSeis * c.seismic
+               + wFlood * c.flood + wContam * c.contam + wWaterway * c.waterway
+               + wGeo * c.geo
+    }))
+    .sort((a, b) => b.composite - a.composite)
+    .slice(0, 20);
+
+  tbody.innerHTML = top.map(c => `
+    <tr>
+      <td style="font-family:monospace;font-size:0.82rem;line-height:1.6;">
+        ${c.lat.toFixed(2)}&deg;&thinsp;N<br>${Math.abs(c.lng).toFixed(2)}&deg;&thinsp;W
+      </td>
+      <td class="score-cell ${scoreClass(c.tx)} detail-col">${c.tx.toFixed(3)}</td>
+      <td class="score-cell ${scoreClass(c.water)} detail-col">${c.water.toFixed(3)}</td>
+      <td class="score-cell ${scoreClass(c.ej)} detail-col">${c.ej.toFixed(3)}</td>
+      <td class="score-cell ${scoreClass(c.seismic)} detail-col">${c.seismic.toFixed(3)}</td>
+      <td class="score-cell ${scoreClass(c.geo)} detail-col">${c.geo.toFixed(3)}</td>
+      <td class="score-cell ${scoreClass(c.composite)}">${c.composite.toFixed(3)}</td>
+    </tr>
+  `).join('');
+}
+
+// ── Slider listeners ─────────────────────────────────────────────────
+['tx', 'water', 'ej', 'seismic', 'flood', 'contam', 'waterway', 'geo'].forEach(id => {
+  document.getElementById('w-' + id).addEventListener('input', updateMap);
+});
+</script>
+</body>
+</html>
