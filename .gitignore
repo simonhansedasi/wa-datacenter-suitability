@@ -2,3 +2,6 @@ data/raw/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+deploy_do.sh
+nginx.conf
+datacenter_siting.service
