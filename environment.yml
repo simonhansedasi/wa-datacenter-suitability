@@ -1,0 +1,13 @@
+name: datacenter_siting
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - geopandas
+  - pandas
+  - numpy
+  - matplotlib
+  - scipy
+  - requests
+  - ipykernel

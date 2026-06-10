@@ -179,6 +179,11 @@
         <input type="range" id="w-geo" min="0" max="100" value="0">
         <div class="pct" id="pct-geo">0%</div>
       </div>
+      <div class="slider-row">
+        <div class="slider-label">Terrain flatness <span>(SRTM 90m slope; hard gate at &lt;3% flat)</span></div>
+        <input type="range" id="w-flat" min="0" max="100" value="0">
+        <div class="pct" id="pct-flat">0%</div>
+      </div>
 
       <div class="map-note">
         Score 0&ndash;1 &nbsp;&bull;&nbsp; green = more suitable &nbsp;&bull;&nbsp;
@@ -270,11 +275,11 @@
       <tr>
         <th>Cluster</th>
         <th class="detail-col">Grid access</th><th class="detail-col">Water</th><th class="detail-col">Community</th>
-        <th class="detail-col">Seismic</th><th class="detail-col">Contamination</th><th class="detail-col">Waterway</th><th class="detail-col">Geothermal</th><th>Composite</th>
+        <th class="detail-col">Seismic</th><th class="detail-col">Contamination</th><th class="detail-col">Waterway</th><th class="detail-col">Geothermal</th><th class="detail-col">Flatness</th><th>Composite</th>
       </tr>
     </thead>
     <tbody>
-      <tr data-tx="0.988" data-water="0.189" data-ej="0.552" data-seismic="0.885" data-flood="1.0" data-contam="0.501" data-waterway="0.068" data-geo="0.319">
+      <tr data-tx="0.988" data-water="0.189" data-ej="0.552" data-seismic="0.885" data-flood="1.0" data-contam="0.501" data-waterway="0.068" data-geo="0.319" data-flat="0.769">
         <td>Quincy (Grant County)</td>
         <td class="score-cell score-hi detail-col">0.988</td>
         <td class="score-cell score-lo detail-col">0.189</td>
@@ -283,9 +288,10 @@
         <td class="score-cell score-mid detail-col">0.501</td>
         <td class="score-cell score-lo detail-col">0.068</td>
         <td class="score-cell score-lo detail-col">0.319</td>
+        <td class="score-cell score-hi detail-col">0.769</td>
         <td class="score-cell score-mid composite-cell">0.563</td>
       </tr>
-      <tr data-tx="0.985" data-water="0.293" data-ej="0.636" data-seismic="0.848" data-flood="1.0" data-contam="0.554" data-waterway="0.244" data-geo="0.318">
+      <tr data-tx="0.985" data-water="0.293" data-ej="0.636" data-seismic="0.848" data-flood="1.0" data-contam="0.554" data-waterway="0.244" data-geo="0.318" data-flat="0.479">
         <td>Malaga / East Wenatchee</td>
         <td class="score-cell score-hi detail-col">0.985</td>
         <td class="score-cell score-lo detail-col">0.293</td>
@@ -294,9 +300,10 @@
         <td class="score-cell score-mid detail-col">0.554</td>
         <td class="score-cell score-mid detail-col">0.244</td>
         <td class="score-cell score-lo detail-col">0.318</td>
+        <td class="score-cell score-mid detail-col">0.479</td>
         <td class="score-cell score-mid composite-cell">0.610</td>
       </tr>
-      <tr data-tx="0.968" data-water="0.743" data-ej="0.544" data-seismic="0.371" data-flood="1.0" data-contam="0.009" data-waterway="0.463" data-geo="0.257">
+      <tr data-tx="0.968" data-water="0.743" data-ej="0.544" data-seismic="0.371" data-flood="1.0" data-contam="0.009" data-waterway="0.463" data-geo="0.257" data-flat="0.705">
         <td>Seattle downtown</td>
         <td class="score-cell score-hi detail-col">0.968</td>
         <td class="score-cell score-hi detail-col">0.743</td>
@@ -305,9 +312,10 @@
         <td class="score-cell score-lo detail-col">0.009</td>
         <td class="score-cell score-mid detail-col">0.463</td>
         <td class="score-cell score-lo detail-col">0.257</td>
+        <td class="score-cell score-hi detail-col">0.705</td>
         <td class="score-cell score-mid composite-cell">0.544</td>
       </tr>
-      <tr data-tx="0.994" data-water="0.739" data-ej="0.109" data-seismic="0.402" data-flood="1.0" data-contam="0.028" data-waterway="0.544" data-geo="0.235">
+      <tr data-tx="0.994" data-water="0.739" data-ej="0.109" data-seismic="0.402" data-flood="1.0" data-contam="0.028" data-waterway="0.544" data-geo="0.235" data-flat="0.828">
         <td>Tukwila corridor</td>
         <td class="score-cell score-hi detail-col">0.994</td>
         <td class="score-cell score-hi detail-col">0.739</td>
@@ -316,9 +324,10 @@
         <td class="score-cell score-lo detail-col">0.028</td>
         <td class="score-cell score-mid detail-col">0.544</td>
         <td class="score-cell score-lo detail-col">0.235</td>
+        <td class="score-cell score-hi detail-col">0.828</td>
         <td class="score-cell score-mid composite-cell">0.506</td>
       </tr>
-      <tr data-tx="0.996" data-water="0.244" data-ej="0.877" data-seismic="1.000" data-flood="1.0" data-contam="0.145" data-waterway="0.116" data-geo="0.461">
+      <tr data-tx="0.996" data-water="0.244" data-ej="0.877" data-seismic="1.000" data-flood="1.0" data-contam="0.145" data-waterway="0.116" data-geo="0.461" data-flat="0.564">
         <td>Liberty Lake (Spokane)</td>
         <td class="score-cell score-hi detail-col">0.996</td>
         <td class="score-cell score-lo detail-col">0.244</td>
@@ -327,9 +336,10 @@
         <td class="score-cell score-mid detail-col">0.145</td>
         <td class="score-cell score-mid detail-col">0.116</td>
         <td class="score-cell score-mid detail-col">0.461</td>
+        <td class="score-cell score-mid detail-col">0.564</td>
         <td class="score-cell score-mid composite-cell">0.605</td>
       </tr>
-      <tr data-tx="0.968" data-water="0.743" data-ej="0.544" data-seismic="0.371" data-flood="1.0" data-contam="0.009" data-waterway="0.463" data-geo="0.257">
+      <tr data-tx="0.968" data-water="0.743" data-ej="0.544" data-seismic="0.371" data-flood="1.0" data-contam="0.009" data-waterway="0.463" data-geo="0.257" data-flat="0.705">
         <td>Digital Realty (proposed)</td>
         <td class="score-cell score-hi detail-col">0.968</td>
         <td class="score-cell score-hi detail-col">0.743</td>
@@ -338,9 +348,10 @@
         <td class="score-cell score-lo detail-col">0.009</td>
         <td class="score-cell score-mid detail-col">0.463</td>
         <td class="score-cell score-lo detail-col">0.257</td>
+        <td class="score-cell score-hi detail-col">0.705</td>
         <td class="score-cell score-mid composite-cell">0.544</td>
       </tr>
-      <tr data-tx="0.987" data-water="0.000" data-ej="0.446" data-seismic="0.916" data-flood="1.0" data-contam="0.014" data-waterway="0.015" data-geo="0.339">
+      <tr data-tx="0.987" data-water="0.000" data-ej="0.446" data-seismic="0.916" data-flood="1.0" data-contam="0.014" data-waterway="0.015" data-geo="0.339" data-flat="1.000">
         <td>Wallula Gap / Burbank (proposed)</td>
         <td class="score-cell score-hi detail-col">0.987</td>
         <td class="score-cell score-lo detail-col">0.000</td>
@@ -349,9 +360,10 @@
         <td class="score-cell score-lo detail-col">0.014</td>
         <td class="score-cell score-lo detail-col">0.015</td>
         <td class="score-cell score-lo detail-col">0.339</td>
+        <td class="score-cell score-hi detail-col">1.000</td>
         <td class="score-cell score-mid composite-cell">0.465</td>
       </tr>
-      <tr data-tx="0.996" data-water="0.000" data-ej="0.737" data-seismic="0.913" data-flood="1.0" data-contam="0.142" data-waterway="0.046" data-geo="0.342">
+      <tr data-tx="0.996" data-water="0.000" data-ej="0.737" data-seismic="0.913" data-flood="1.0" data-contam="0.142" data-waterway="0.046" data-geo="0.342" data-flat="1.000">
         <td>Richland / Horn Rapids (proposed)</td>
         <td class="score-cell score-hi detail-col">0.996</td>
         <td class="score-cell score-lo detail-col">0.000</td>
@@ -360,9 +372,10 @@
         <td class="score-cell score-mid detail-col">0.142</td>
         <td class="score-cell score-lo detail-col">0.046</td>
         <td class="score-cell score-lo detail-col">0.342</td>
+        <td class="score-cell score-hi detail-col">1.000</td>
         <td class="score-cell score-mid composite-cell">0.522</td>
       </tr>
-      <tr data-tx="0.930" data-water="0.000" data-ej="0.737" data-seismic="0.918" data-flood="1.0" data-contam="0.207" data-waterway="0.037" data-geo="0.560">
+      <tr data-tx="0.930" data-water="0.000" data-ej="0.737" data-seismic="0.918" data-flood="1.0" data-contam="0.207" data-waterway="0.037" data-geo="0.560" data-flat="0.833">
         <td>West Richland / Lewis Clark Ranch (proposed)</td>
         <td class="score-cell score-hi detail-col">0.930</td>
         <td class="score-cell score-lo detail-col">0.000</td>
@@ -371,6 +384,7 @@
         <td class="score-cell score-mid detail-col">0.207</td>
         <td class="score-cell score-lo detail-col">0.037</td>
         <td class="score-cell score-mid detail-col">0.560</td>
+        <td class="score-cell score-hi detail-col">0.833</td>
         <td class="score-cell score-mid composite-cell">0.549</td>
       </tr>
     </tbody>
@@ -392,7 +406,7 @@
       <tr>
         <th>Location</th>
         <th class="detail-col">Grid access</th><th class="detail-col">Water</th><th class="detail-col">Community</th>
-        <th class="detail-col">Seismic</th><th class="detail-col">Geothermal</th><th>Composite</th>
+        <th class="detail-col">Seismic</th><th class="detail-col">Geothermal</th><th class="detail-col">Flatness</th><th>Composite</th>
       </tr>
     </thead>
     <tbody id="top-sites-tbody">
@@ -475,12 +489,111 @@
   </p>
 </div>
 
+<div class="section">
+  <h2>Terrain Flatness: A Physical Buildability Gate</h2>
+  <p>
+    Large data center campuses require 20&ndash;30 acres of essentially flat ground for foundations,
+    cooling infrastructure, and security setbacks. This indicator asks not whether a grid cell is
+    uniformly flat, but whether <em>enough flat land exists within it</em> to accommodate a campus pad.
+  </p>
+  <p>
+    Slope is computed at ~90m resolution from
+    <a href="https://registry.opendata.aws/terrain-tiles/">SRTM1 tiles</a>
+    (AWS Open Data terrain tiles bucket) using <code>numpy.gradient</code> with a per-latitude
+    correction for east&ndash;west pixel width. For each 5 km grid cell, the score is the
+    fraction of pixels with slope &lt;&nbsp;5&deg; &mdash; the conventional threshold for
+    large-pad civil grading.
+  </p>
+  <p>
+    Cells where fewer than 3% of pixels meet this threshold (&lt;&nbsp;185 acres of sub-5&deg; terrain)
+    are <strong>hard-gated as unbuildable</strong> and rendered as dark overlays on the map regardless
+    of slider weights. 61 cells (6.3% of the analysis grid) are excluded by this gate &mdash; primarily
+    the Cascade Range, the Olympics, and the Okanogan Highlands. Passing cells are scored 0&ndash;1
+    proportional to their flat fraction.
+  </p>
+  <h3>Flatness explains the desert clustering</h3>
+  <p>
+    The Columbia Plateau &mdash; where Quincy, the Tri-Cities, and all four proposed campuses sit &mdash;
+    is a basalt plateau formed by successive lava flows. Wallula Gap and Richland score
+    <strong>1.000 flatness</strong> (fully flat cells). Quincy scores 0.769. In contrast, the Malaga /
+    East Wenatchee cluster scores only 0.479 &mdash; it sits at the Columbia River canyon where the
+    Cascades descend to the plateau, introducing enough relief to reduce the buildable flat fraction
+    meaningfully. Developers who cite &ldquo;proximity to power&rdquo; as the reason for eastern WA
+    concentration are correct, but terrain is an equally silent co-factor: the basalt plateau requires
+    minimal site preparation on campuses measuring hundreds of acres.
+  </p>
+  <p>
+    The Tukwila corridor (HorizonIQ, ColoCrossing) scores 0.828 on flatness &mdash; the Duwamish
+    industrial valley is engineered flat &mdash; but carries the lowest community burden score
+    (EJ = 0.109) of any active cluster. The flatness gate removes the Cascade foothills cells
+    that had been artificially inflated by strong transmission and water scores.
+  </p>
+  <div class="img-full">
+    <img src="/static/img/terrain_flatness.png" alt="Terrain flatness map for Washington State">
+  </div>
+  <p class="img-caption">
+    Fraction of each 5 km cell with slope &lt; 5&deg; (SRTM1 ~90m). Dark cells are hard-gated as
+    unbuildable (&lt; 3% flat area). YlGn scale: 0 = scarce flat land / 1 = highly flat.
+    White filled = existing DC; outline = proposed.
+  </p>
+</div>
+
+<!-- ── PROTECTED LAND ────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Protected and Off-Limits Land: A Regulatory Buildability Gate</h2>
+  <p>
+    Siting a data center on land that is legally off-limits is not a planning error &mdash; it is a
+    category error. National Parks, Wilderness Areas, Wildlife Refuges, military installations, and
+    American Indian sovereign territories are not difficult to permit; they are impossible to permit.
+    This indicator identifies and hard-gates those cells from the analysis.
+  </p>
+  <p>
+    Protection layer sources: <strong>Esri USA Federal Lands</strong> (ArcGIS Living Atlas),
+    filtered to National Park Service, Fish and Wildlife Service, Department of Defense, and
+    Forest Service units. Bureau of Land Management is excluded because BLM land is leasable
+    for commercial use. Tribal sovereign territory is sourced from
+    <strong>Census TIGER AIANNH</strong> (federally recognized American Indian and Alaska Native
+    homelands). Both layers are merged and dissolved before computing overlap.
+  </p>
+  <p>
+    The gate threshold is 25%: a grid cell where more than one quarter of its 5 km extent falls
+    within protected boundaries is excluded. The reasoning is practical &mdash; a cell that is
+    majority-adjacent to a National Park boundary faces the same permitting exposure, utility
+    corridor constraints, and community opposition as one that sits directly inside it.
+    <strong>82 cells (8.4% of the analysis grid)</strong> are excluded by this gate.
+  </p>
+  <h3>What the gate removes</h3>
+  <p>
+    The gate removes the entire Olympic Peninsula, the North Cascades, the southern Cascades south
+    of Rainier, much of the Okanogan Highlands (Colville National Forest), and cells intersecting
+    the Yakama Nation and Colville Reservation boundaries in central WA. Eastern WA agricultural
+    land, the Puget Sound lowlands, and the Columbia Basin &mdash; where existing data center
+    clusters operate &mdash; are largely unaffected. All nine existing and proposed cluster cells
+    pass with protected fractions well below the 25% threshold.
+  </p>
+  <p>
+    Combined with the terrain flatness gate (61 cells excluded), the two buildability filters
+    together remove 124 cells (12.7%) from the viable candidate pool, leaving
+    <strong>850 cells (87.3%)</strong> open to composite scoring.
+  </p>
+  <div class="img-full">
+    <img src="/static/img/protected_land.png" alt="Protected land gate map for Washington State">
+  </div>
+  <p class="img-caption">
+    Cells gated by protected land coverage (dark, 82 cells). Green boundary = merged protection
+    layer (Esri Federal Lands: NPS, USFWS, DoD, FS; plus Census TIGER tribal areas).
+    White filled = existing DC; outline = proposed.
+  </p>
+</div>
+
 <!-- ── METHODOLOGY ───────────────────────────────────────────────────── -->
 <div class="section">
   <h2>Methodology</h2>
   <p>
     Analysis grid: 0.15-degree fishnet (~14 km cells) clipped to Washington State boundary.
-    974 cells total. All scores normalized 0&ndash;1 before weighting.
+    974 cells total. Two hard buildability gates (terrain flatness, protected land) remove
+    124 cells, leaving 850 viable candidates for composite scoring.
+    All scores normalized 0&ndash;1 before weighting.
   </p>
   <dl class="sources">
     <dt>Transmission proximity</dt>
@@ -555,6 +668,33 @@
       Score = interpolated heat flow / maximum interpolated value
       (0 = low geothermal potential, 1 = high).
     </dd>
+    <dt>Terrain flatness</dt>
+    <dd>
+      Slope computed at ~90m resolution from
+      <a href="https://registry.opendata.aws/terrain-tiles/">SRTM1 tiles</a>
+      (AWS Open Data terrain tiles bucket; 36 tiles covering WA bounding box).
+      Raw HGT binary files parsed with NumPy; slope derived via <code>numpy.gradient</code>
+      with per-latitude correction for east&ndash;west pixel width
+      (dx = RES &times; cos(lat) &times; 111,320 m/deg).
+      For each grid cell, <code>flat_frac</code> = fraction of ~90m pixels with slope &lt; 5&deg;.
+      <strong>Hard gate:</strong> cells with flat_frac &lt; 0.03 (&lt; ~185 acres of sub-5&deg; terrain)
+      receive flatness_score = 0.0 and are excluded from composite scoring entirely.
+      Passing cells: score = flat_frac / p95(flat_frac of buildable cells), clipped to [0, 1].
+    </dd>
+    <dt>Protected land</dt>
+    <dd>
+      Protected area boundaries from two sources:
+      (1) <strong>Esri USA Federal Lands</strong> (ArcGIS Living Atlas public service),
+      filtered to four agencies: National Park Service, Fish and Wildlife Service,
+      Department of Defense, and Forest Service. BLM excluded (leasable for commercial use).
+      (2) <a href="https://tigerweb.geo.census.gov/">Census TIGER AIANNH</a>
+      (federally recognized American Indian and Alaska Native homelands).
+      All sources reprojected to UTM Zone 10N (EPSG:32610), dissolved into a single multipolygon,
+      and intersected with each grid cell using <code>geopandas.overlay(how='intersection')</code>.
+      <code>protected_frac</code> = intersected area / cell area.
+      <strong>Hard gate:</strong> cells with protected_frac &gt; 0.25 receive protected_score = 0.0
+      and are excluded from composite scoring entirely.
+    </dd>
   </dl>
 
   <p style="margin-top:20px; font-size:0.85rem; color: var(--muted);">
@@ -615,7 +755,7 @@ let gridLayer = null;
 let gridData  = null;
 
 function getWeights() {
-  const ids = ['tx', 'water', 'ej', 'seismic', 'flood', 'contam', 'waterway', 'geo'];
+  const ids = ['tx', 'water', 'ej', 'seismic', 'flood', 'contam', 'waterway', 'geo', 'flat'];
   const raw = ids.map(id => parseFloat(document.getElementById('w-' + id).value));
   const total = raw.reduce((a, b) => a + b, 0) || 1;
   const pcts  = raw.map(v => v / total);
@@ -649,12 +789,22 @@ function cellCentroid(feature) {
 
 function updateMap() {
   if (!gridLayer) return;
-  const [wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo] = getWeights();
+  const [wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat] = getWeights();
   recommendLayer.clearLayers();
-  updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo);
-  updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo);
+  updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat);
+  updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat);
   gridLayer.eachLayer(layer => {
     const p = layer.feature.properties;
+    const flat = p.flatness_score;
+    if (flat !== undefined && flat === 0) {
+      layer.setStyle({ fillColor: '#2a2a3a', fillOpacity: 0.55, color: 'transparent', weight: 0 });
+      return;
+    }
+    const prot = p.protected_score;
+    if (prot !== undefined && prot === 0) {
+      layer.setStyle({ fillColor: '#2a2a3a', fillOpacity: 0.55, color: 'transparent', weight: 0 });
+      return;
+    }
     const score = wTx       * p.tx_score
                 + wWater    * p.water_score
                 + wEj       * p.ej_score
@@ -662,7 +812,8 @@ function updateMap() {
                 + wFlood    * p.flood_score
                 + wContam   * (p.contamination_score || 0)
                 + wWaterway * (p.waterway_score || 0)
-                + wGeo      * (p.geothermal_score  || 0);
+                + wGeo      * (p.geothermal_score  || 0)
+                + wFlat     * (flat || 0);
     layer.setStyle(cellStyle(score));
     if (score >= RECOMMEND_THRESHOLD) {
       const ll = cellCentroid(layer.feature);
@@ -692,7 +843,9 @@ fetch('/static/grid_scores.geojson')
         seismic: p.seismic_score, flood: p.flood_score,
         contam: p.contamination_score || 0,
         waterway: p.waterway_score || 0,
-        geo: p.geothermal_score || 0
+        geo: p.geothermal_score || 0,
+        flat:      p.flatness_score,
+        protected: p.protected_score
       });
     });
     gridLayer = L.geoJSON(data, {
@@ -770,7 +923,7 @@ function scoreClass(s) {
   return s >= 0.70 ? 'score-hi' : s >= 0.55 ? 'score-mid' : 'score-lo';
 }
 
-function updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo) {
+function updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat) {
   document.querySelectorAll('tr[data-tx]').forEach(row => {
     const score = wTx       * parseFloat(row.dataset.tx)
                 + wWater    * parseFloat(row.dataset.water)
@@ -779,7 +932,8 @@ function updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo) 
                 + wFlood    * parseFloat(row.dataset.flood)
                 + wContam   * parseFloat(row.dataset.contam   || 0)
                 + wWaterway * parseFloat(row.dataset.waterway || 0)
-                + wGeo      * parseFloat(row.dataset.geo      || 0);
+                + wGeo      * parseFloat(row.dataset.geo      || 0)
+                + wFlat     * parseFloat(row.dataset.flat     || 0);
     const cell = row.querySelector('.composite-cell');
     cell.textContent = score.toFixed(3);
     cell.className = `score-cell ${scoreClass(score)} composite-cell`;
@@ -787,19 +941,19 @@ function updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo) 
 }
 
 // ── Top unclaimed sites ───────────────────────────────────────────────
-function updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo) {
+function updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat) {
   const tbody = document.getElementById('top-sites-tbody');
   if (!tbody || allCells.length === 0) return;
   const top = allCells
     .filter(c => !dcPoints.some(p =>
       p.lat >= c.minLat && p.lat <= c.maxLat &&
       p.lng >= c.minLng && p.lng <= c.maxLng
-    ))
+    ) && c.flat !== 0 && c.protected !== 0)
     .map(c => ({
       ...c,
       composite: wTx * c.tx + wWater * c.water + wEj * c.ej + wSeis * c.seismic
                + wFlood * c.flood + wContam * c.contam + wWaterway * c.waterway
-               + wGeo * c.geo
+               + wGeo * c.geo + wFlat * (c.flat || 0)
     }))
     .sort((a, b) => b.composite - a.composite)
     .slice(0, 20);
@@ -814,13 +968,14 @@ function updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGe
       <td class="score-cell ${scoreClass(c.ej)} detail-col">${c.ej.toFixed(3)}</td>
       <td class="score-cell ${scoreClass(c.seismic)} detail-col">${c.seismic.toFixed(3)}</td>
       <td class="score-cell ${scoreClass(c.geo)} detail-col">${c.geo.toFixed(3)}</td>
+      <td class="score-cell ${scoreClass(c.flat || 0)} detail-col">${c.flat !== undefined ? c.flat.toFixed(3) : '—'}</td>
       <td class="score-cell ${scoreClass(c.composite)}">${c.composite.toFixed(3)}</td>
     </tr>
   `).join('');
 }
 
 // ── Slider listeners ─────────────────────────────────────────────────
-['tx', 'water', 'ej', 'seismic', 'flood', 'contam', 'waterway', 'geo'].forEach(id => {
+['tx', 'water', 'ej', 'seismic', 'flood', 'contam', 'waterway', 'geo', 'flat'].forEach(id => {
   document.getElementById('w-' + id).addEventListener('input', updateMap);
 });
 </script>
