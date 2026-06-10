@@ -67,6 +67,8 @@
     width: 42px; text-align: right; flex-shrink: 0;
   }
   .map-note { font-size: 0.78rem; color: var(--muted); margin-top: 10px; font-family: monospace; }
+  .gate-tooltip { background: #1a1a2e; border: 1px solid #4a4a6a; color: #d8d8f0; font-family: monospace; font-size: 0.78rem; padding: 6px 10px; line-height: 1.6; }
+  .gate-tooltip::before { border-top-color: #4a4a6a; }
 
   /* ── findings grid ── */
   .findings-grid { display: grid; grid-template-columns: 1fr; gap: 28px; margin-top: 24px; }
@@ -190,7 +192,9 @@
         red = less suitable &nbsp;&bull;&nbsp;
         cyan circle = recommended zone (&ge;0.75) &nbsp;&bull;&nbsp;
         white diamond = existing DC &nbsp;&bull;&nbsp;
-        outline diamond = proposed DC
+        outline diamond = proposed DC &nbsp;&bull;&nbsp;
+        <span style="color:#c8884a;">&#9632;</span> terrain gate &nbsp;&bull;&nbsp;
+        <span style="color:#3a8a3a;">&#9632;</span> protected land gate &mdash; hover for detail
       </div>
     </div>
   </div>
@@ -797,12 +801,12 @@ function updateMap() {
     const p = layer.feature.properties;
     const flat = p.flatness_score;
     if (flat !== undefined && flat === 0) {
-      layer.setStyle({ fillColor: '#2a2a3a', fillOpacity: 0.55, color: 'transparent', weight: 0 });
+      layer.setStyle({ fillColor: '#3a2808', fillOpacity: 0.82, color: '#7a5010', weight: 0.7 });
       return;
     }
     const prot = p.protected_score;
     if (prot !== undefined && prot === 0) {
-      layer.setStyle({ fillColor: '#2a2a3a', fillOpacity: 0.55, color: 'transparent', weight: 0 });
+      layer.setStyle({ fillColor: '#0d2b0d', fillOpacity: 0.82, color: '#2e6030', weight: 0.7 });
       return;
     }
     const score = wTx       * p.tx_score
@@ -849,7 +853,25 @@ fetch('/static/grid_scores.geojson')
       });
     });
     gridLayer = L.geoJSON(data, {
-      style: feat => cellStyle(0)
+      style: feat => cellStyle(0),
+      onEachFeature: (feat, layer) => {
+        const p = feat.properties;
+        const flat = p.flatness_score;
+        const prot = p.protected_score;
+        if (flat !== undefined && flat === 0) {
+          layer.bindTooltip(
+            '<b style="color:#e8a040;">Terrain gate</b><br>Less than 3% of this cell has slope &lt; 5&deg;<br>' +
+            '&lt; ~185 acres of buildable flat land — <em>permanently excluded</em>',
+            { sticky: true, className: 'gate-tooltip' }
+          );
+        } else if (prot !== undefined && prot === 0) {
+          layer.bindTooltip(
+            '<b style="color:#5cb85c;">Protected land gate</b><br>More than 25% of this cell overlaps<br>' +
+            'NPS / USFWS / DoD / Forest Service or tribal land — <em>permanently excluded</em>',
+            { sticky: true, className: 'gate-tooltip' }
+          );
+        }
+      }
     }).addTo(map);
     updateMap();
   });
@@ -895,6 +917,21 @@ fetch('/static/datacenters.geojson')
       }
     }).addTo(map);
   });
+
+// ── Gate legend ───────────────────────────────────────────────────────
+const gateLegend = L.control({ position: 'bottomleft' });
+gateLegend.onAdd = () => {
+  const div = L.DomUtil.create('div');
+  div.style.cssText = 'background:#1a1a2e;border:1px solid #2e2e4a;padding:10px 14px;font-family:monospace;font-size:0.75rem;color:#c8c8e0;line-height:2.0;margin-bottom:6px;';
+  div.innerHTML = `
+    <div style="color:#8888aa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Hard gates — off limits</div>
+    <div><span style="display:inline-block;width:14px;height:14px;background:#3a2808;border:1.5px solid #7a5010;vertical-align:middle;margin-right:8px;"></span>Terrain: &lt; 3% flat area (61 cells)</div>
+    <div><span style="display:inline-block;width:14px;height:14px;background:#0d2b0d;border:1.5px solid #2e6030;vertical-align:middle;margin-right:8px;"></span>Protected land: NPS / USFWS / DoD / FS / tribal (82 cells)</div>
+    <div style="color:#666688;font-size:0.7rem;margin-top:4px;">Gated cells are excluded regardless of slider weights.</div>
+  `;
+  return div;
+};
+gateLegend.addTo(map);
 
 // ── Transmission legend ───────────────────────────────────────────────
 const txLegend = L.control({ position: 'bottomleft' });
