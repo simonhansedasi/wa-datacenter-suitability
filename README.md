@@ -1,68 +1,108 @@
-# Washington State Data Center Siting Suitability
+# Data Center Siting Suitability
 
-Geospatial case study quantifying ethical and cost-effective data center siting in Washington
-State using ten publicly available indicator layers plus two hard buildability gates. Live at
-[datacenters.simonhansedasi.com](https://datacenters.simonhansedasi.com).
+Geospatial case study quantifying ethical data center siting across US states using
+ten publicly available indicator layers and two hard buildability gates.
+Live at [datacenters.simonhansedasi.com](https://datacenters.simonhansedasi.com).
 
 ## The argument
-Washington's existing data center corridor (Quincy / East Wenatchee) is optimized for one
-dimension — grid access — at the expense of water availability and community burden. The
-Columbia Basin's water allocation is essentially fully subscribed; Grant County's own
+
+Washington's existing data center corridor (Quincy / East Wenatchee) is optimized for
+one dimension — grid access — at the expense of water availability and community burden.
+The Columbia Basin's water allocation is essentially fully subscribed; Grant County's own
 administrator has stated that water and power are "maxed out." Meanwhile, 25 data center
 projects were canceled nationally in 2025 due to community opposition, up from 6 in 2024.
 This tool makes those tradeoffs visible and quantifiable.
 
-## Notebooks
-
-### 01_basemap.ipynb
-Basemap: WA boundary, data center locations (OSM + curated, 15 operating + 4 proposed),
-high-voltage transmission lines (OSM ≥100kV), EIA Form 860 power plant locations.
-
-### 02_stress_indicators.ipynb
-Three core suitability indicators:
-- **Transmission proximity** — distance to nearest HV line (OSM)
-- **Water availability** — 30-yr mean annual precipitation, ERA5 via Open-Meteo
-- **Community burden** — Census ACS Demographic Index (poverty + minority rate, replicating EPA EJScreen)
-
-### 03_risk_modifiers.ipynb
-Risk-side indicators:
-- **Seismic safety** — PGA at 2% probability in 50 years (USGS ASCE 7-22 API)
-- **Flood safety** — binary SFHA exclusion (FEMA NFHL REST API)
-
-### 04_environmental_risk.ipynb
-- **Contamination proximity** — distance to nearest EPA Superfund NPL site (26 WA sites)
-- **Waterway sensitivity** — proximity to major regulated waterways as ESA/thermal discharge proxy
-
-### 05_geothermal.ipynb
-- **Geothermal opportunity** — surface heat flow from IHFC GHFDB 2024 (664 WA boreholes, IDW interpolation, capped at 95th pct to suppress Mt Baker anomaly)
-
-### 06_terrain.ipynb
-- **Terrain flatness** — fraction of ~90m SRTM1 pixels with slope < 5° per grid cell
-- Hard gate: cells with < 3% flat area (< ~185 acres) receive flatness_score = 0 and are excluded entirely
-- 61 cells gated (6.3%); Quincy = 0.769, Columbia Basin proposed sites = 1.000
-
-### 07_protected_land.ipynb
-- **Protected land gate** — overlap with NPS, USFWS, DoD, Forest Service (Esri Federal Lands) + Census TIGER tribal boundaries
-- Hard gate: cells with > 25% protected overlap receive protected_score = 0 and are excluded entirely
-- 82 cells gated (8.4%); all existing and proposed cluster cells pass
-
-## Analysis grid
-974 cells, 0.15-degree fishnet (~14 km), clipped to WA boundary. Two hard gates remove
-124 cells (12.7%), leaving **850 viable candidates** for composite scoring.
-
-## Setup
+## Quick start
 
 ```bash
 conda env create -f environment.yml
-./setup_env.sh   # creates conda env + registers Jupyter kernel
+conda activate datacenter_siting
+python scripts/run_pipeline.py WA
 ```
 
-No GDAL required. Terrain data uses `requests` + `numpy` to parse SRTM1 HGT binary tiles
-directly. All other spatial work uses `geopandas`.
+See [PIPELINE_GUIDE.md](PIPELINE_GUIDE.md) for full setup, step descriptions, and troubleshooting.
 
-Census API key required for NB02 (free at census.gov/developers). Code reads from
-`/home/simonhans/coding/snotrac/.env` as `CENSUS_API_KEY=<key>`.
+## Indicators
+
+| # | Score | Source | Type |
+|---|---|---|---|
+| 1 | tx_score | OSM HV transmission lines | Suitability |
+| 2 | water_score | Open-Meteo ERA5 30-yr precip | Suitability |
+| 3 | ej_score | Census ACS poverty + minority rate | Suitability |
+| 4 | seismic_score | USGS ASCE 7-22 PGA | Risk |
+| 5 | flood_score | FEMA NFHL flood zones | Risk |
+| 6 | contamination_score | EPA Superfund NPL sites | Environmental |
+| 7 | waterway_score | OSM major rivers | Environmental |
+| 8 | geothermal_score | IHFC GHFDB 2024 heat flow | Opportunity |
+| 9 | flatness_score | SRTM1 terrain flatness | Hard gate |
+| 10 | protected_score | Esri Federal Lands + TIGER tribal | Hard gate |
+
+Hard gates 9 and 10 are binary exclusions applied regardless of slider weights.
+All other scores are normalized 0-1 (1 = most favorable).
+
+## Analysis grid (Washington State baseline)
+
+974 cells, 0.15-degree fishnet (~14 km), clipped to WA boundary.
+Two hard gates remove 124 cells (12.7%), leaving **850 viable candidates**.
+
+Key findings:
+- Quincy corridor: tx=0.988, water=0.189 — grid-optimal, water-constrained
+- Digital Realty proposed (Cascade foothills): composite=0.783 vs Quincy=0.599
+- Tri-Cities emerging cluster (Wallula Gap, Atlas Agro, Trammell Crow): water=0.000
+- Tukwila/HorizonIQ: water=0.739 but ej=0.109 — worst community burden of any cluster
+
+## Script pipeline
+
+`scripts/` runs any US state end-to-end. All 50 states defined in `scripts/config.py`.
+
+```bash
+python scripts/run_pipeline.py WA              # full run
+python scripts/run_pipeline.py OR --start 03   # resume from step 03
+python scripts/run_pipeline.py TX --only 06 07 # terrain + protected only
+python scripts/run_pipeline.py WA --deploy     # run + copy to static/
+```
+
+| Script | Outputs |
+|---|---|
+| 01_basemap.py | state.geojson, datacenters.geojson, transmission.geojson, plants |
+| 02_indicators.py | Fishnet grid; tx_score, water_score, ej_score |
+| 03_risk.py | seismic_score, flood_score |
+| 04_environment.py | contamination_score (EPA NPL), waterway_score (OSM rivers) |
+| 05_geothermal.py | geothermal_score (IHFC GHFDB 2024, bbox-filtered) |
+| 06_terrain.py | flatness_score (SRTM1, hard gate at 3% flat area) |
+| 07_protected.py | protected_score (Esri Federal Lands + TIGER tribal, gate at 25%) |
+
+Output: `data/{STATE}/grid_scores.geojson`
+
+## Notebooks
+
+`notebooks/` contains the original exploratory notebooks for Washington State.
+They share the same logic as the scripts but are cell-by-cell and WA-specific.
+
+## Setup notes
+
+- No GDAL required. Terrain uses `requests` + `numpy` to parse SRTM1 HGT binaries.
+- Census API key required for step 02 (free at census.gov/developers).
+  Set `CENSUS_API_KEY` in `~/.env` or as an environment variable.
+- IHFC 2024 shapefile required for step 05. Place at `data/raw/IHFC_2024_GHFDB.shp`.
+  Step 05 completes without it but sets geothermal_score = 0.5 (neutral).
 
 ## Data sources
-All publicly available, no proprietary data. See `CONTEXT.md` in
-`~/coding/contexts/datacenter_siting/` for full source table and caching details.
+
+All publicly available, no proprietary data.
+
+| Source | Used for |
+|---|---|
+| Census TIGER 2022 | State boundaries, census tracts |
+| OSM Overpass API | Data centers, HV transmission, rivers |
+| EIA Form 860 (2023) | Power plant locations |
+| Census ACS 5-yr 2022 | Demographic burden (poverty + minority rate) |
+| Open-Meteo ERA5 archive | 30-yr mean annual precipitation |
+| USGS ASCE 7-22 API | Seismic hazard (PGA) |
+| FEMA NFHL REST API | Special Flood Hazard Areas |
+| EPA Envirofacts REST API | Superfund NPL sites |
+| IHFC GHFDB 2024 | Geothermal heat flow boreholes |
+| NASA SRTM1 (AWS S3) | 30m digital elevation model |
+| Esri USA Federal Lands | NPS, USFWS, DoD, Forest Service boundaries |
+| Census TIGER AIANNH | Tribal land boundaries |
