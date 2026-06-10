@@ -67,8 +67,7 @@
     width: 42px; text-align: right; flex-shrink: 0;
   }
   .map-note { font-size: 0.78rem; color: var(--muted); margin-top: 10px; font-family: monospace; }
-  .gate-tooltip { background: #1a1a2e; border: 1px solid #4a4a6a; color: #d8d8f0; font-family: monospace; font-size: 0.78rem; padding: 6px 10px; line-height: 1.6; }
-  .gate-tooltip::before { border-top-color: #4a4a6a; }
+
 
   /* ── findings grid ── */
   .findings-grid { display: grid; grid-template-columns: 1fr; gap: 28px; margin-top: 24px; }
@@ -194,7 +193,7 @@
         white diamond = existing DC &nbsp;&bull;&nbsp;
         outline diamond = proposed DC &nbsp;&bull;&nbsp;
         <span style="color:#c8884a;">&#9632;</span> terrain gate &nbsp;&bull;&nbsp;
-        <span style="color:#3a8a3a;">&#9632;</span> protected land gate &mdash; hover for detail
+        <span style="color:#3a8a3a;">&#9632;</span> protected land gate
       </div>
     </div>
   </div>
@@ -853,25 +852,7 @@ fetch('/static/grid_scores.geojson')
       });
     });
     gridLayer = L.geoJSON(data, {
-      style: feat => cellStyle(0),
-      onEachFeature: (feat, layer) => {
-        const p = feat.properties;
-        const flat = p.flatness_score;
-        const prot = p.protected_score;
-        if (flat !== undefined && flat === 0) {
-          layer.bindTooltip(
-            '<b style="color:#e8a040;">Terrain gate</b><br>Less than 3% of this cell has slope &lt; 5&deg;<br>' +
-            '&lt; ~185 acres of buildable flat land — <em>permanently excluded</em>',
-            { sticky: true, className: 'gate-tooltip' }
-          );
-        } else if (prot !== undefined && prot === 0) {
-          layer.bindTooltip(
-            '<b style="color:#5cb85c;">Protected land gate</b><br>More than 25% of this cell overlaps<br>' +
-            'NPS / USFWS / DoD / Forest Service or tribal land — <em>permanently excluded</em>',
-            { sticky: true, className: 'gate-tooltip' }
-          );
-        }
-      }
+      style: feat => cellStyle(0)
     }).addTo(map);
     updateMap();
   });
