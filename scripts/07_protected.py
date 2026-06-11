@@ -43,7 +43,10 @@ AGENCIES = ("'National Park Service','Fish and Wildlife Service',"
 
 def fetch_federal_lands(bbox_str, cache_path):
     if cache_path.exists():
-        return gpd.read_file(cache_path)
+        gdf = gpd.read_file(cache_path)
+        if 'source' not in gdf.columns:
+            gdf["source"] = "Esri Federal Lands"
+        return gdf
     features = []
     offset = 0
     while True:
@@ -71,7 +74,10 @@ def fetch_federal_lands(bbox_str, cache_path):
 
 def fetch_tribal_lands(bbox_str, cache_path):
     if cache_path.exists():
-        return gpd.read_file(cache_path)
+        gdf = gpd.read_file(cache_path)
+        if 'source' not in gdf.columns:
+            gdf["source"] = "TIGER AIANNH"
+        return gdf
     r = requests.get(TIGER_URL, params={
         "geometry": bbox_str, "geometryType": "esriGeometryEnvelope",
         "spatialRel": "esriSpatialRelIntersects", "inSR": "4326",

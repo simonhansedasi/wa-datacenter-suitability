@@ -178,7 +178,7 @@ def main():
     print("Flood zones (flood_score)...")
     sfha = fetch_flood(state, raw)
     if sfha is not None and len(sfha) > 0:
-        sfha_union = sfha.geometry.unary_union
+        sfha_union = sfha.geometry.buffer(0).unary_union
         grid["flood_score"] = grid.geometry.centroid.apply(
             lambda pt: 0.0 if sfha_union.contains(pt) else 1.0
         )

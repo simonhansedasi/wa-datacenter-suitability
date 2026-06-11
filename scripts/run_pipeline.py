@@ -4,7 +4,7 @@ run_pipeline.py — Master script: runs all 7 siting analysis scripts in sequenc
 
 Usage:
   python run_pipeline.py WA
-  python run_pipeline.py OR --deploy       # also copies grid_scores.geojson to static/
+  python run_pipeline.py OR --deploy       # run then show rsync reminder for DO deploy
   python run_pipeline.py TX --start 03     # resume from script 03 onward
   python run_pipeline.py CA --only 06 07   # run only specific scripts
 
@@ -45,7 +45,7 @@ def main():
         epilog="""
 Examples:
   python run_pipeline.py WA                 # full run
-  python run_pipeline.py OR --deploy        # run + copy to static/
+  python run_pipeline.py OR --deploy        # run + print rsync deploy reminder
   python run_pipeline.py TX --start 03      # resume from risk step
   python run_pipeline.py CA --only 06 07    # terrain + protected only
         """,
@@ -86,17 +86,13 @@ Examples:
             print("Pipeline halted. Fix the error and re-run with --start", step_id)
             sys.exit(rc)
 
-    # Deploy: copy grid_scores.geojson to static/ for the web app
+    # Deploy reminder: Flask reads from data/{STATE}/ directly; rsync to DO to publish
     if args.deploy:
-        sys.path.insert(0, str(SCRIPTS_DIR))
-        from config import get_paths
-        _, _, _, grid_path = get_paths(state_abbr)
-        static_out = SCRIPTS_DIR.parent / "static" / "grid_scores.geojson"
-        if grid_path.exists():
-            shutil.copy(grid_path, static_out)
-            print(f"\nDeployed: {grid_path} -> {static_out}")
-        else:
-            print(f"\nWARNING: {grid_path} not found; nothing deployed to static/")
+        project_root = SCRIPTS_DIR.parent
+        print(f"\nDeploy reminder — rsync data/{state_abbr}/ to DO:")
+        print(f"  rsync -av --exclude='srtm_tiles' {project_root}/data/{state_abbr}/ "
+              f"root@<DO_IP>:/path/to/datacenter_siting/data/{state_abbr}/")
+        print("  Then restart: ssh root@<DO_IP> 'systemctl restart datacenters'")
 
     print(f"\n{'='*60}")
     print(f"  Pipeline complete for {state_abbr}.")

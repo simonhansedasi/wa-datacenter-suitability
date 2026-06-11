@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Siting the Grid — Washington State Data Center Suitability</title>
+<title>Siting the Grid — {{ state_name }} Data Center Suitability</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
   :root {
@@ -40,7 +40,7 @@
 
   /* ── interactive map ── */
   .map-wrapper { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-top: 20px; }
-  #map { height: 520px; background: var(--surface); }
+  #map { height: 700px; background: var(--surface); }
 
   .controls {
     background: var(--surface); border-top: 1px solid var(--border);
@@ -117,7 +117,7 @@
 
 <header>
   <h1>Siting the Grid: A Geospatial Case for Smarter Data Center Location in Washington State</h1>
-  <p class="byline">Simon-Hans Edasi &nbsp;/&nbsp; Edasi Motlev LLC &nbsp;/&nbsp; June 2026</p>
+  <p class="byline">Simon-Hans Edasi &nbsp;/&nbsp; Edasi Mõtlev LLC &nbsp;/&nbsp; June 2026</p>
   <p class="lede">
     Washington's data center industry has clustered in Grant County and the Columbia Basin
     for one reason: cheap hydropower and proximity to high-voltage transmission lines.
@@ -719,6 +719,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+const STATE = '{{ state_lower }}';
 // ── Globals ───────────────────────────────────────────────────────────
 let allCells  = [];   // {minLat,maxLat,minLng,maxLng,lat,lng,tx,water,ej,seismic,flood}
 let dcPoints  = [];   // {lat,lng} for all existing+proposed DCs
@@ -828,7 +829,7 @@ function updateMap() {
   });
 }
 
-fetch('/static/grid_scores.geojson')
+fetch('/' + STATE + '/grid_scores.geojson')
   .then(r => r.json())
   .then(data => {
     gridData = data;
@@ -866,7 +867,7 @@ function txStyle(feat) {
   return                   { color: '#9aaabb', weight: 1.0, opacity: 0.55 };
 }
 
-fetch('/static/transmission_wa.geojson')
+fetch('/' + STATE + '/transmission.geojson')
   .then(r => r.json())
   .then(data => {
     L.geoJSON(data, { style: txStyle, interactive: false }).addTo(map);
@@ -882,7 +883,7 @@ function dcIcon(source) {
   });
 }
 
-fetch('/static/datacenters.geojson')
+fetch('/' + STATE + '/datacenters.geojson')
   .then(r => r.json())
   .then(data => {
     data.features.forEach(feat => {
@@ -899,35 +900,28 @@ fetch('/static/datacenters.geojson')
     }).addTo(map);
   });
 
-// ── Gate legend ───────────────────────────────────────────────────────
-const gateLegend = L.control({ position: 'bottomleft' });
-gateLegend.onAdd = () => {
-  const div = L.DomUtil.create('div');
-  div.style.cssText = 'background:#1a1a2e;border:1px solid #2e2e4a;padding:10px 14px;font-family:monospace;font-size:0.75rem;color:#c8c8e0;line-height:2.0;margin-bottom:6px;';
-  div.innerHTML = `
-    <div style="color:#8888aa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Hard gates — off limits</div>
-    <div><span style="display:inline-block;width:14px;height:14px;background:#3a2808;border:1.5px solid #7a5010;vertical-align:middle;margin-right:8px;"></span>Terrain: &lt; 3% flat area (61 cells)</div>
-    <div><span style="display:inline-block;width:14px;height:14px;background:#0d2b0d;border:1.5px solid #2e6030;vertical-align:middle;margin-right:8px;"></span>Protected land: NPS / USFWS / DoD / FS / tribal (82 cells)</div>
-    <div style="color:#666688;font-size:0.7rem;margin-top:4px;">Gated cells are excluded regardless of slider weights.</div>
+// ── Combined legend (topright, side by side) ──────────────────────────
+const combinedLegend = L.control({ position: 'topright' });
+combinedLegend.onAdd = () => {
+  const wrapper = L.DomUtil.create('div');
+  wrapper.style.cssText = 'display:flex;flex-direction:row;gap:8px;align-items:flex-start;';
+  wrapper.innerHTML = `
+    <div style="background:#1a1a2e;border:1px solid #2e2e4a;padding:10px 14px;font-family:monospace;font-size:0.75rem;color:#c8c8e0;line-height:1.9;">
+      <div style="color:#8888aa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Transmission</div>
+      <div><span style="display:inline-block;width:28px;height:3px;background:#f5c518;vertical-align:middle;margin-right:8px;"></span>345+ kV</div>
+      <div><span style="display:inline-block;width:28px;height:2px;background:#7eb8d4;vertical-align:middle;margin-right:8px;"></span>230 kV</div>
+      <div><span style="display:inline-block;width:28px;height:2px;background:#9aaabb;vertical-align:middle;margin-right:8px;"></span>115 kV</div>
+    </div>
+    <div style="background:#1a1a2e;border:1px solid #2e2e4a;padding:10px 14px;font-family:monospace;font-size:0.75rem;color:#c8c8e0;line-height:2.0;">
+      <div style="color:#8888aa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Hard gates</div>
+      <div><span style="display:inline-block;width:14px;height:14px;background:#3a2808;border:1.5px solid #7a5010;vertical-align:middle;margin-right:8px;"></span>Terrain: &lt; 3% flat area (61 cells)</div>
+      <div><span style="display:inline-block;width:14px;height:14px;background:#0d2b0d;border:1.5px solid #2e6030;vertical-align:middle;margin-right:8px;"></span>Protected: NPS / USFWS / DoD / FS / tribal (82 cells)</div>
+      <div style="color:#666688;font-size:0.7rem;margin-top:4px;">Excluded regardless of slider weights.</div>
+    </div>
   `;
-  return div;
+  return wrapper;
 };
-gateLegend.addTo(map);
-
-// ── Transmission legend ───────────────────────────────────────────────
-const txLegend = L.control({ position: 'bottomleft' });
-txLegend.onAdd = () => {
-  const div = L.DomUtil.create('div');
-  div.style.cssText = 'background:#1a1a2e;border:1px solid #2e2e4a;padding:10px 14px;font-family:monospace;font-size:0.75rem;color:#c8c8e0;line-height:1.9;';
-  div.innerHTML = `
-    <div style="color:#8888aa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Transmission</div>
-    <div><span style="display:inline-block;width:28px;height:3px;background:#f5c518;vertical-align:middle;margin-right:8px;"></span>345+ kV</div>
-    <div><span style="display:inline-block;width:28px;height:2px;background:#7eb8d4;vertical-align:middle;margin-right:8px;"></span>230 kV</div>
-    <div><span style="display:inline-block;width:28px;height:2px;background:#9aaabb;vertical-align:middle;margin-right:8px;"></span>115 kV</div>
-  `;
-  return div;
-};
-txLegend.addTo(map);
+combinedLegend.addTo(map);
 
 // ── Table expand/collapse ─────────────────────────────────────────────
 function toggleTable(tableId, btn) {

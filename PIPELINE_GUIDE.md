@@ -407,19 +407,29 @@ and safe to share.
 
 ## Deploying a state audit to the web app
 
-The Flask web app at `datacenters.simonhansedasi.com` reads `static/grid_scores.geojson`.
-Only one state can be active at a time.
+The Flask web app at `datacenters.simonhansedasi.com` uses path-based routing.
+Each state gets its own URL: `datacenters.simonhansedasi.com/wa/`, `/or/`, etc.
+Flask reads `data/{STATE}/grid_scores.geojson` directly — no `static/` copy needed.
+
+To publish a completed state run to the live site:
 
 ```bash
-# Run and deploy in one command
-python scripts/run_pipeline.py WA --deploy
+# Step 1: deploy code changes if needed
+bash deploy_do.sh
 
-# Or manually after a run
-cp data/OR/grid_scores.geojson static/grid_scores.geojson
-# then restart the web service if needed
+# Step 2: rsync the state data to DO (skip srtm_tiles — not needed for serving)
+rsync -av --exclude='srtm_tiles/' \
+  data/WA/ \
+  root@<DO_IP>:/home/simonhans/coding/datacenter_siting/data/WA/
+
+# Step 3: if data/WA/ didn't exist on DO, create it first:
+ssh root@<DO_IP> "mkdir -p /path/to/datacenter_siting/data/WA/raw /path/to/datacenter_siting/data/WA/processed"
+
+# Step 4: restart if needed
+ssh root@<DO_IP> "systemctl restart datacenter_siting"
 ```
 
-Note: the web app's cluster table and indicator labels are hardcoded for Washington.
-If you deploy another state, the map and sliders will work correctly, but the named
-cluster rows in the table will not match. Multi-state support in the web app is a
-future feature.
+The `--deploy` flag in `run_pipeline.py` prints the rsync reminder.
+
+Note: the cluster table and written analysis in the page are still Washington-specific.
+The map, sliders, and top-sites table all work correctly for any state.
