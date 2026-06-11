@@ -398,7 +398,7 @@
     active cluster in this analysis.
   </p>
 
-  <h3 style="margin-top:40px;">Top 20 Unclaimed Site Scores</h3>
+  <h3 style="margin-top:40px;">Top 10 Unclaimed Site Scores</h3>
   <p style="font-size:0.85rem;color:var(--muted);margin-bottom:8px;">
     Grid cells with no existing or proposed data center, ranked by composite score under the current
     weight settings. Locations are cell centroids (~14 km resolution). Updates live with the sliders above.
@@ -968,7 +968,7 @@ function updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGe
                + wGeo * c.geo + wFlat * (c.flat || 0)
     }))
     .sort((a, b) => b.composite - a.composite)
-    .slice(0, 20);
+    .slice(0, 10);
 
   tbody.innerHTML = top.map(c => `
     <tr>
