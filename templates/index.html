@@ -166,7 +166,7 @@
         <div class="pct" id="pct-flood">0%</div>
       </div>
       <div class="slider-row">
-        <div class="slider-label">Contamination <span>(distance from Superfund NPL)</span></div>
+        <div class="slider-label">Contamination <span>(distance from EPA TRI facility)</span></div>
         <input type="range" id="w-contam" min="0" max="100" value="0">
         <div class="pct" id="pct-contam">0%</div>
       </div>
@@ -184,6 +184,11 @@
         <div class="slider-label">Terrain flatness <span>(SRTM 90m slope; hard gate at &lt;3% flat)</span></div>
         <input type="range" id="w-flat" min="0" max="100" value="0">
         <div class="pct" id="pct-flat">0%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Population exposure <span>(residents per km&sup2;, inverted)</span></div>
+        <input type="range" id="w-pop" min="0" max="100" value="0">
+        <div class="pct" id="pct-pop">0%</div>
       </div>
 
       <div class="map-note">
@@ -282,7 +287,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr data-tx="0.988" data-water="0.189" data-ej="0.552" data-seismic="0.885" data-flood="1.0" data-contam="0.501" data-waterway="0.068" data-geo="0.319" data-flat="0.769">
+      <tr data-tx="0.988" data-water="0.189" data-ej="0.552" data-seismic="0.885" data-flood="1.0" data-contam="0.501" data-waterway="0.068" data-geo="0.319" data-flat="0.769" data-pop="0.885">
         <td>Quincy (Grant County)</td>
         <td class="score-cell score-hi detail-col">0.988</td>
         <td class="score-cell score-lo detail-col">0.189</td>
@@ -294,7 +299,7 @@
         <td class="score-cell score-hi detail-col">0.769</td>
         <td class="score-cell score-mid composite-cell">0.563</td>
       </tr>
-      <tr data-tx="0.985" data-water="0.293" data-ej="0.636" data-seismic="0.848" data-flood="1.0" data-contam="0.554" data-waterway="0.244" data-geo="0.318" data-flat="0.479">
+      <tr data-tx="0.985" data-water="0.293" data-ej="0.636" data-seismic="0.848" data-flood="1.0" data-contam="0.554" data-waterway="0.244" data-geo="0.318" data-flat="0.479" data-pop="0.733">
         <td>Malaga / East Wenatchee</td>
         <td class="score-cell score-hi detail-col">0.985</td>
         <td class="score-cell score-lo detail-col">0.293</td>
@@ -306,7 +311,7 @@
         <td class="score-cell score-mid detail-col">0.479</td>
         <td class="score-cell score-mid composite-cell">0.610</td>
       </tr>
-      <tr data-tx="0.968" data-water="0.743" data-ej="0.544" data-seismic="0.371" data-flood="1.0" data-contam="0.009" data-waterway="0.463" data-geo="0.257" data-flat="0.705">
+      <tr data-tx="0.968" data-water="0.743" data-ej="0.544" data-seismic="0.371" data-flood="1.0" data-contam="0.009" data-waterway="0.463" data-geo="0.257" data-flat="0.705" data-pop="0.000">
         <td>Seattle downtown</td>
         <td class="score-cell score-hi detail-col">0.968</td>
         <td class="score-cell score-hi detail-col">0.743</td>
@@ -318,7 +323,7 @@
         <td class="score-cell score-hi detail-col">0.705</td>
         <td class="score-cell score-mid composite-cell">0.544</td>
       </tr>
-      <tr data-tx="0.994" data-water="0.739" data-ej="0.109" data-seismic="0.402" data-flood="1.0" data-contam="0.028" data-waterway="0.544" data-geo="0.235" data-flat="0.828">
+      <tr data-tx="0.994" data-water="0.739" data-ej="0.109" data-seismic="0.402" data-flood="1.0" data-contam="0.028" data-waterway="0.544" data-geo="0.235" data-flat="0.828" data-pop="0.000">
         <td>Tukwila corridor</td>
         <td class="score-cell score-hi detail-col">0.994</td>
         <td class="score-cell score-hi detail-col">0.739</td>
@@ -330,7 +335,7 @@
         <td class="score-cell score-hi detail-col">0.828</td>
         <td class="score-cell score-mid composite-cell">0.506</td>
       </tr>
-      <tr data-tx="0.996" data-water="0.244" data-ej="0.877" data-seismic="1.000" data-flood="1.0" data-contam="0.145" data-waterway="0.116" data-geo="0.461" data-flat="0.564">
+      <tr data-tx="0.996" data-water="0.244" data-ej="0.877" data-seismic="1.000" data-flood="1.0" data-contam="0.145" data-waterway="0.116" data-geo="0.461" data-flat="0.564" data-pop="0.527">
         <td>Liberty Lake (Spokane)</td>
         <td class="score-cell score-hi detail-col">0.996</td>
         <td class="score-cell score-lo detail-col">0.244</td>
@@ -342,7 +347,7 @@
         <td class="score-cell score-mid detail-col">0.564</td>
         <td class="score-cell score-mid composite-cell">0.605</td>
       </tr>
-      <tr data-tx="0.968" data-water="0.743" data-ej="0.544" data-seismic="0.371" data-flood="1.0" data-contam="0.009" data-waterway="0.463" data-geo="0.257" data-flat="0.705">
+      <tr data-tx="0.968" data-water="0.743" data-ej="0.544" data-seismic="0.371" data-flood="1.0" data-contam="0.009" data-waterway="0.463" data-geo="0.257" data-flat="0.705" data-pop="0.000">
         <td>Digital Realty (proposed)</td>
         <td class="score-cell score-hi detail-col">0.968</td>
         <td class="score-cell score-hi detail-col">0.743</td>
@@ -354,7 +359,7 @@
         <td class="score-cell score-hi detail-col">0.705</td>
         <td class="score-cell score-mid composite-cell">0.544</td>
       </tr>
-      <tr data-tx="0.987" data-water="0.000" data-ej="0.446" data-seismic="0.916" data-flood="1.0" data-contam="0.014" data-waterway="0.015" data-geo="0.339" data-flat="1.000">
+      <tr data-tx="0.987" data-water="0.000" data-ej="0.446" data-seismic="0.916" data-flood="1.0" data-contam="0.014" data-waterway="0.015" data-geo="0.339" data-flat="1.000" data-pop="0.994">
         <td>Wallula Gap / Burbank (proposed)</td>
         <td class="score-cell score-hi detail-col">0.987</td>
         <td class="score-cell score-lo detail-col">0.000</td>
@@ -366,7 +371,7 @@
         <td class="score-cell score-hi detail-col">1.000</td>
         <td class="score-cell score-mid composite-cell">0.465</td>
       </tr>
-      <tr data-tx="0.996" data-water="0.000" data-ej="0.737" data-seismic="0.913" data-flood="1.0" data-contam="0.142" data-waterway="0.046" data-geo="0.342" data-flat="1.000">
+      <tr data-tx="0.996" data-water="0.000" data-ej="0.737" data-seismic="0.913" data-flood="1.0" data-contam="0.142" data-waterway="0.046" data-geo="0.342" data-flat="1.000" data-pop="0.811">
         <td>Richland / Horn Rapids (proposed)</td>
         <td class="score-cell score-hi detail-col">0.996</td>
         <td class="score-cell score-lo detail-col">0.000</td>
@@ -378,7 +383,7 @@
         <td class="score-cell score-hi detail-col">1.000</td>
         <td class="score-cell score-mid composite-cell">0.522</td>
       </tr>
-      <tr data-tx="0.930" data-water="0.000" data-ej="0.737" data-seismic="0.918" data-flood="1.0" data-contam="0.207" data-waterway="0.037" data-geo="0.560" data-flat="0.833">
+      <tr data-tx="0.930" data-water="0.000" data-ej="0.737" data-seismic="0.918" data-flood="1.0" data-contam="0.207" data-waterway="0.037" data-geo="0.560" data-flat="0.833" data-pop="0.800">
         <td>West Richland / Lewis Clark Ranch (proposed)</td>
         <td class="score-cell score-hi detail-col">0.930</td>
         <td class="score-cell score-lo detail-col">0.000</td>
@@ -447,10 +452,10 @@
   <h2>Environmental Risk: Contamination and Waterway Sensitivity</h2>
   <p>
     Two additional risk modifiers quantify environmental liability independent of water scarcity.
-    <strong>Contamination proximity</strong> scores each cell by distance to the nearest active EPA
-    Superfund National Priorities List site in Washington State. Amazon's Wallula Gap campus
-    scores 0.014 — effectively at the perimeter of the Hanford Site, the largest
-    contaminated site in the Western hemisphere.
+    <strong>Contamination proximity</strong> scores each cell by distance to the nearest facility
+    in the EPA Toxics Release Inventory (TRI) — 556 geocoded WA industrial sites reporting
+    toxic chemical releases. Amazon's Wallula Gap campus scores 0.014, placing it immediately
+    adjacent to one of the most industrially concentrated corridors in eastern Washington.
     <strong>Waterway sensitivity</strong> scores by distance to the nearest major regulated
     river (Columbia, Snake, Spokane, Skagit, Yakima) — a proxy for ESA Section 7 thermal
     discharge constraints and water withdrawal scrutiny. The same Wallula Gap site scores
@@ -640,14 +645,15 @@
     </dd>
     <dt>Contamination proximity</dt>
     <dd>
-      Distance from each cell centroid to the nearest active
-      <a href="https://www.epa.gov/superfund/national-priorities-list-npl-sites-state">EPA Superfund National Priorities List (NPL)</a>
-      site in Washington State. 26 active WA sites hardcoded from the EPA state list;
-      coordinates are approximate site centroids. Score = normalized distance
-      (0 = adjacent to NPL site, 1 = farthest cell in state).
-      Notable: the Hanford Site (46.55&deg;N, 119.53&deg;W) — the largest
-      contaminated site in the Western hemisphere — sits immediately adjacent to the
-      Tri-Cities proposed campus cluster.
+      Distance from each cell centroid to the nearest facility in the
+      <a href="https://www.epa.gov/toxics-release-inventory-tri-program">EPA Toxics Release Inventory (TRI)</a>,
+      sourced via the
+      <a href="https://data.epa.gov/efservice/TRI_FACILITY/STATE_ABBR/WA/JSON">Envirofacts REST API</a>
+      (<code>TRI_FACILITY/STATE_ABBR/{state}</code>). 556 geocoded WA facilities (of 1,010 total)
+      report toxic chemical releases across manufacturing, agriculture, and energy sectors.
+      TRI provides broader coverage than the NPL Superfund list — it captures industrial
+      contamination risk at all active facilities, not just the worst ~1% that reach NPL status.
+      Score = normalized distance (0 = adjacent to TRI facility, 1 = farthest cell in state).
     </dd>
     <dt>Waterway sensitivity</dt>
     <dd>
@@ -684,6 +690,19 @@
       receive flatness_score = 0.0 and are excluded from composite scoring entirely.
       Passing cells: score = flat_frac / p95(flat_frac of buildable cells), clipped to [0, 1].
     </dd>
+    <dt>Population exposure</dt>
+    <dd>
+      Tract-level total population from the
+      <a href="https://www.census.gov/programs-surveys/acs">American Community Survey</a>
+      5-year estimates (table B01003), divided by tract area (km&sup2;) to produce population density.
+      Each grid cell is assigned the mean density of all census tracts whose centroid falls within it.
+      Density is capped at the 95th percentile to reduce outlier influence from dense urban cores,
+      then inverted and normalized to [0, 1]: <strong>1 = low density (few residents exposed),
+      0 = high density (many residents nearby).</strong>
+      This layer is orthogonal to Community Burden (EJ): EJ measures who lives nearby (poverty and
+      minority share); Population Exposure measures how many.
+    </dd>
+
     <dt>Protected land</dt>
     <dd>
       Protected area boundaries from two sources:
@@ -759,7 +778,7 @@ let gridLayer = null;
 let gridData  = null;
 
 function getWeights() {
-  const ids = ['tx', 'water', 'ej', 'seismic', 'flood', 'contam', 'waterway', 'geo', 'flat'];
+  const ids = ['tx', 'water', 'ej', 'seismic', 'flood', 'contam', 'waterway', 'geo', 'flat', 'pop'];
   const raw = ids.map(id => parseFloat(document.getElementById('w-' + id).value));
   const total = raw.reduce((a, b) => a + b, 0) || 1;
   const pcts  = raw.map(v => v / total);
@@ -793,10 +812,10 @@ function cellCentroid(feature) {
 
 function updateMap() {
   if (!gridLayer) return;
-  const [wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat] = getWeights();
+  const [wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat, wPop] = getWeights();
   recommendLayer.clearLayers();
-  updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat);
-  updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat);
+  updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat, wPop);
+  updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat, wPop);
   gridLayer.eachLayer(layer => {
     const p = layer.feature.properties;
     const flat = p.flatness_score;
@@ -814,10 +833,11 @@ function updateMap() {
                 + wEj       * p.ej_score
                 + wSeis     * p.seismic_score
                 + wFlood    * p.flood_score
-                + wContam   * (p.contamination_score || 0)
-                + wWaterway * (p.waterway_score || 0)
-                + wGeo      * (p.geothermal_score  || 0)
-                + wFlat     * (flat || 0);
+                + wContam   * (p.contamination_score   || 0)
+                + wWaterway * (p.waterway_score        || 0)
+                + wGeo      * (p.geothermal_score      || 0)
+                + wFlat     * (flat                    || 0)
+                + wPop      * (p.pop_exposure_score    || 0);
     layer.setStyle(cellStyle(score));
     if (score >= RECOMMEND_THRESHOLD) {
       const ll = cellCentroid(layer.feature);
@@ -845,10 +865,11 @@ fetch('/' + STATE + '/grid_scores.geojson')
         lng: (Math.min(...lngs) + Math.max(...lngs)) / 2,
         tx: p.tx_score, water: p.water_score, ej: p.ej_score,
         seismic: p.seismic_score, flood: p.flood_score,
-        contam: p.contamination_score || 0,
-        waterway: p.waterway_score || 0,
-        geo: p.geothermal_score || 0,
-        flat:      p.flatness_score,
+        contam:  p.contamination_score  || 0,
+        waterway: p.waterway_score      || 0,
+        geo:      p.geothermal_score    || 0,
+        flat:     p.flatness_score,
+        pop:      p.pop_exposure_score  || 0,
         protected: p.protected_score
       });
     });
@@ -935,7 +956,7 @@ function scoreClass(s) {
   return s >= 0.70 ? 'score-hi' : s >= 0.55 ? 'score-mid' : 'score-lo';
 }
 
-function updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat) {
+function updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat, wPop) {
   document.querySelectorAll('tr[data-tx]').forEach(row => {
     const score = wTx       * parseFloat(row.dataset.tx)
                 + wWater    * parseFloat(row.dataset.water)
@@ -945,7 +966,8 @@ function updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, 
                 + wContam   * parseFloat(row.dataset.contam   || 0)
                 + wWaterway * parseFloat(row.dataset.waterway || 0)
                 + wGeo      * parseFloat(row.dataset.geo      || 0)
-                + wFlat     * parseFloat(row.dataset.flat     || 0);
+                + wFlat     * parseFloat(row.dataset.flat     || 0)
+                + wPop      * parseFloat(row.dataset.pop      || 0);
     const cell = row.querySelector('.composite-cell');
     cell.textContent = score.toFixed(3);
     cell.className = `score-cell ${scoreClass(score)} composite-cell`;
@@ -953,7 +975,7 @@ function updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, 
 }
 
 // ── Top unclaimed sites ───────────────────────────────────────────────
-function updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat) {
+function updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat, wPop) {
   const tbody = document.getElementById('top-sites-tbody');
   if (!tbody || allCells.length === 0) return;
   const top = allCells
@@ -965,7 +987,7 @@ function updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGe
       ...c,
       composite: wTx * c.tx + wWater * c.water + wEj * c.ej + wSeis * c.seismic
                + wFlood * c.flood + wContam * c.contam + wWaterway * c.waterway
-               + wGeo * c.geo + wFlat * (c.flat || 0)
+               + wGeo * c.geo + wFlat * (c.flat || 0) + wPop * (c.pop || 0)
     }))
     .sort((a, b) => b.composite - a.composite)
     .slice(0, 10);
@@ -987,7 +1009,7 @@ function updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGe
 }
 
 // ── Slider listeners ─────────────────────────────────────────────────
-['tx', 'water', 'ej', 'seismic', 'flood', 'contam', 'waterway', 'geo', 'flat'].forEach(id => {
+['tx', 'water', 'ej', 'seismic', 'flood', 'contam', 'waterway', 'geo', 'flat', 'pop'].forEach(id => {
   document.getElementById('w-' + id).addEventListener('input', updateMap);
 });
 </script>

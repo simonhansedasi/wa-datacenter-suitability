@@ -1,5 +1,6 @@
 """State configuration table for the data center siting pipeline."""
 
+import os
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -79,11 +80,19 @@ def get_state(abbr: str) -> dict:
 
 
 def get_paths(abbr: str) -> tuple:
-    """Return (project_root, raw_dir, processed_dir, grid_path)."""
+    """Return (project_root, raw_dir, processed_dir, grid_path).
+
+    If the env var DC_SUBDIR is set (e.g. 'zcta'), grid_scores.geojson is written
+    to data/{STATE}/{DC_SUBDIR}/ instead of data/{STATE}/. Scripts 03-07 are
+    geometry-agnostic, so the same scripts serve both fishnet and ZCTA runs.
+    """
     cfg = get_state(abbr)
     raw = PROJECT_ROOT / "data" / abbr / "raw"
     processed = PROJECT_ROOT / "data" / abbr / "processed"
-    grid = PROJECT_ROOT / "data" / abbr / "grid_scores.geojson"
+    subdir = os.environ.get("DC_SUBDIR", "")
+    study_root = PROJECT_ROOT / "data" / abbr / subdir if subdir else PROJECT_ROOT / "data" / abbr
+    study_root.mkdir(parents=True, exist_ok=True)
+    grid = study_root / "grid_scores.geojson"
     raw.mkdir(parents=True, exist_ok=True)
     processed.mkdir(parents=True, exist_ok=True)
     return PROJECT_ROOT, raw, processed, grid

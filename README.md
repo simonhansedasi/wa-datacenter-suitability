@@ -1,6 +1,6 @@
 # Data Center Siting Suitability
 
-Geospatial case study quantifying ethical data center siting across US states using
+Geospatial siting analysis quantifying data center land suitability across US states using
 ten publicly available indicator layers and two hard buildability gates.
 Live at [datacenters.simonhansedasi.com](https://datacenters.simonhansedasi.com).
 
@@ -17,11 +17,28 @@ This tool makes those tradeoffs visible and quantifiable.
 
 ```bash
 conda env create -f environment.yml
-conda activate datacenter_siting
+conda activate GrapeExpectations
+
+# State-wide atlas (fishnet grid)
 python scripts/run_pipeline.py WA
+
+# ZCTA study (ZIP Code resolution — for jurisdiction-scale studies)
+python zcta/run_zcta_study.py WA
 ```
 
 See [PIPELINE_GUIDE.md](PIPELINE_GUIDE.md) for full setup, step descriptions, and troubleshooting.
+
+## Product tiers
+
+| Tier | Geography | URL pattern | Use case |
+|---|---|---|---|
+| State atlas | 0.15° fishnet (~14 km) | `/wa/` | Public map, press, Steward briefings |
+| ZCTA study | ZIP Code Tabulation Areas | `/wa/study/` | Jurisdiction studies — demographic data native to ZCTA |
+| City case study | Filtered ZCTA subset | `/wa/study/seattle/` | City-scoped report with policy context |
+
+The fishnet atlas and ZCTA study use identical indicator definitions. The ZCTA advantage is
+methodological: EJ burden and population exposure are native Census ZCTA data, so no spatial
+join approximation is needed to assign tract-level demographics to grid cells.
 
 ## Indicators
 
@@ -32,7 +49,7 @@ See [PIPELINE_GUIDE.md](PIPELINE_GUIDE.md) for full setup, step descriptions, an
 | 3 | ej_score | Census ACS poverty + minority rate | Suitability |
 | 4 | seismic_score | USGS ASCE 7-22 PGA | Risk |
 | 5 | flood_score | FEMA NFHL flood zones | Risk |
-| 6 | contamination_score | EPA Superfund NPL sites | Environmental |
+| 6 | contamination_score | EPA TRI facility proximity | Environmental |
 | 7 | waterway_score | OSM major rivers | Environmental |
 | 8 | geothermal_score | IHFC GHFDB 2024 heat flow | Opportunity |
 | 9 | flatness_score | SRTM1 terrain flatness | Hard gate |
@@ -43,10 +60,13 @@ All other scores are normalized 0-1 (1 = most favorable).
 
 ## Analysis grid (Washington State baseline)
 
-974 cells, 0.15-degree fishnet (~14 km), clipped to WA boundary.
-Two hard gates remove 124 cells (12.7%), leaving **850 viable candidates**.
+**Fishnet atlas:** 974 cells, 0.15-degree (~14 km), clipped to WA boundary.
+Two hard gates remove 124 cells (12.7%), leaving 850 viable candidates.
 
-Key findings:
+**ZCTA study:** 575 ZCTAs; median 94 km² (0.3× fishnet cell).
+Urban western WA has ZCTAs as small as 2 km²; eastern WA corridor ZCTAs are ~250-800 km².
+
+Key findings (WA fishnet):
 - Quincy corridor: tx=0.988, water=0.189 — grid-optimal, water-constrained
 - Digital Realty proposed (Cascade foothills): composite=0.783 vs Quincy=0.599
 - Tri-Cities emerging cluster (Wallula Gap, Atlas Agro, Trammell Crow): water=0.000
@@ -60,20 +80,50 @@ Key findings:
 python scripts/run_pipeline.py WA              # full run
 python scripts/run_pipeline.py OR --start 03   # resume from step 03
 python scripts/run_pipeline.py TX --only 06 07 # terrain + protected only
-python scripts/run_pipeline.py WA --deploy     # run + copy to static/
 ```
 
 | Script | Outputs |
 |---|---|
-| 01_basemap.py | state.geojson, datacenters.geojson, transmission.geojson, plants |
-| 02_indicators.py | Fishnet grid; tx_score, water_score, ej_score |
+| 01_basemap.py | state.geojson, datacenters.geojson, transmission.geojson |
+| 02_indicators.py | Fishnet grid; tx_score, water_score, ej_score, pop_exposure_score |
 | 03_risk.py | seismic_score, flood_score |
-| 04_environment.py | contamination_score (EPA NPL), waterway_score (OSM rivers) |
+| 04_environment.py | contamination_score (EPA TRI), waterway_score (OSM rivers) |
 | 05_geothermal.py | geothermal_score (IHFC GHFDB 2024, bbox-filtered) |
 | 06_terrain.py | flatness_score (SRTM1, hard gate at 3% flat area) |
 | 07_protected.py | protected_score (Esri Federal Lands + TIGER tribal, gate at 25%) |
 
 Output: `data/{STATE}/grid_scores.geojson`
+
+## ZCTA study pipeline
+
+`zcta/` runs a ZIP Code Tabulation Area resolution study for any state.
+Steps 03-07 from the main pipeline are reused via `DC_SUBDIR=zcta` env var.
+
+```bash
+python zcta/run_zcta_study.py WA
+python zcta/run_zcta_study.py WA --start 03   # resume after step 02
+```
+
+| Script | Role |
+|---|---|
+| zcta/02_zcta_indicators.py | ZCTA boundaries (Census 2020); tx_score, water_score, ej_score, pop_exposure_score |
+| scripts/03-07 | Reused unchanged — geometry-agnostic |
+
+Output: `data/{STATE}/zcta/grid_scores.geojson`
+
+ZCTA boundary source: Census 2020 500k cartographic boundaries.
+No 2022/2023/2024 ZCTA boundary files exist — 2020 is the current standard.
+
+## City case studies
+
+City-scoped studies filter a state's ZCTA data to a defined set of ZIPs and add
+policy/seismic context. Add a new city by adding an entry to `REGIONS` in `src/app.py`.
+
+**Seattle (WA)** — live at `/wa/study/seattle/`:
+- 29 city-limits ZCTAs, 0 hard-gated
+- Key within-city differentiators: EJ burden (spread 0.63), terrain flatness (spread 0.76)
+- Near-uniform within city: water availability (spread 0.01), seismic (spread 0.02)
+- Policy context: Seattle moratorium on new data centers >20 MW (April 2026)
 
 ## Notebooks
 
@@ -95,13 +145,14 @@ All publicly available, no proprietary data.
 | Source | Used for |
 |---|---|
 | Census TIGER 2022 | State boundaries, census tracts |
+| Census ZCTA 2020 cartographic boundaries | ZCTA study tier |
 | OSM Overpass API | Data centers, HV transmission, rivers |
 | EIA Form 860 (2023) | Power plant locations |
 | Census ACS 5-yr 2022 | Demographic burden (poverty + minority rate) |
 | Open-Meteo ERA5 archive | 30-yr mean annual precipitation |
 | USGS ASCE 7-22 API | Seismic hazard (PGA) |
 | FEMA NFHL REST API | Special Flood Hazard Areas |
-| EPA Envirofacts REST API | Superfund NPL sites |
+| EPA Envirofacts REST API (TRI_FACILITY) | Industrial facility proximity |
 | IHFC GHFDB 2024 | Geothermal heat flow boreholes |
 | NASA SRTM1 (AWS S3) | 30m digital elevation model |
 | Esri USA Federal Lands | NPS, USFWS, DoD, Forest Service boundaries |
