@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZCTA Siting Study &mdash; {{ state_name }}</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --surface: #1a1a2e;
+    --border: #2e2e4a;
+    --text: #e0e0f0;
+    --muted: #8888aa;
+    --accent: #5b8dee;
+    --green: #4caf82;
+    --red: #e05c5c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Georgia', serif; line-height: 1.7; }
+  a { color: var(--accent); }
+  a:hover { text-decoration: underline; }
+
+  header {
+    max-width: 860px; margin: 0 auto; padding: 52px 24px 36px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-meta {
+    display: flex; align-items: baseline; gap: 16px; margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  header h1 { font-size: 1.8rem; line-height: 1.25; }
+  header .byline { color: var(--muted); font-size: 0.85rem; font-family: monospace; }
+  header .lede {
+    margin-top: 16px; font-size: 1rem; color: #c0c0d8;
+    border-left: 3px solid var(--accent); padding-left: 16px;
+  }
+  .atlas-link {
+    font-family: monospace; font-size: 0.8rem; color: var(--muted);
+    margin-top: 10px; display: block;
+  }
+
+  .section { max-width: 860px; margin: 0 auto; padding: 40px 24px; border-bottom: 1px solid var(--border); }
+  h2 { font-size: 1.3rem; margin-bottom: 10px; color: #d0d0ee; }
+  p { margin-bottom: 12px; color: #c8c8e0; }
+
+  /* ── map ── */
+  .map-wrapper { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-top: 16px; }
+  #map { height: 700px; background: var(--surface); }
+
+  .controls {
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 18px 20px;
+  }
+  .controls-title {
+    font-family: monospace; font-size: 0.8rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px;
+  }
+  .slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .slider-label {
+    font-family: monospace; font-size: 0.82rem; color: var(--text);
+    width: 200px; flex-shrink: 0;
+  }
+  .slider-label span { color: var(--muted); font-size: 0.75rem; }
+  input[type=range] { flex: 1; accent-color: var(--accent); cursor: pointer; }
+  .pct {
+    font-family: monospace; font-size: 0.82rem; color: var(--accent);
+    width: 42px; text-align: right; flex-shrink: 0;
+  }
+  .map-note { font-size: 0.78rem; color: var(--muted); margin-top: 10px; font-family: monospace; }
+
+  /* ── table ── */
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.85rem; }
+  th { background: var(--surface); color: var(--muted); font-family: monospace;
+       font-weight: normal; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: #c8c8e0; }
+  tr:last-child td { border-bottom: none; }
+  .score-cell { font-family: monospace; font-weight: bold; }
+  .score-hi  { color: var(--green); }
+  .score-lo  { color: var(--red); }
+  .score-mid { color: #e0c060; }
+  .detail-col { display: none; }
+  .table-expanded .detail-col { display: table-cell; }
+  .expand-btn {
+    font-size: 0.78rem; font-family: monospace; cursor: pointer;
+    background: var(--surface); color: var(--muted); border: 1px solid var(--border);
+    border-radius: 4px; padding: 3px 10px; margin-bottom: 6px;
+  }
+  .expand-btn:hover { color: #c8c8e0; }
+
+  /* ── tooltip ── */
+  .leaflet-tooltip.zcta-tip {
+    background: #1a1a2e; border: 1px solid #2e2e4a; color: #e0e0f0;
+    font-family: monospace; font-size: 0.78rem; line-height: 1.7;
+    padding: 8px 12px; border-radius: 4px; box-shadow: none;
+    pointer-events: none;
+  }
+  .leaflet-tooltip.zcta-tip::before { display: none; }
+
+  footer { max-width: 860px; margin: 0 auto; padding: 32px 24px 64px; }
+  footer p { font-size: 0.8rem; color: var(--muted); font-family: monospace; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-meta">
+    <h1>ZCTA Siting Study &mdash; {{ state_name }}</h1>
+    <span class="byline">Edasi M&otilde;tlev LLC &nbsp;/&nbsp; 2026</span>
+  </div>
+  <p class="lede">
+    ZIP Code Tabulation Area (ZCTA) resolution siting analysis. Each polygon is a Census
+    ZCTA &mdash; small in urban areas, large in rural ones &mdash; scored on ten normalized
+    indicators. Adjust weights to reflect your jurisdiction&rsquo;s priorities. Hard-gated cells
+    (terrain unbuildable, federally protected) are excluded regardless of weights.
+  </p>
+  <a class="atlas-link" href="/{{ state_lower }}/">&larr; Back to state atlas (fishnet view)</a>
+</header>
+
+<!-- ── MAP ─────────────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Composite Suitability Explorer</h2>
+  <p style="font-size:0.9rem;color:var(--muted);">
+    Hover any ZCTA for scores. Sliders recolor the map live.
+  </p>
+  <div class="map-wrapper">
+    <div id="map"></div>
+    <div class="controls">
+      <div class="controls-title">Indicator weights &mdash; drag to adjust, auto-normalize to 100%</div>
+
+      <div class="slider-row">
+        <div class="slider-label">Transmission proximity <span>(grid access)</span></div>
+        <input type="range" id="w-tx" min="0" max="100" value="40">
+        <div class="pct" id="pct-tx">40%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Water availability <span>(annual precip)</span></div>
+        <input type="range" id="w-water" min="0" max="100" value="35">
+        <div class="pct" id="pct-water">35%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Community burden <span>(EJScreen index, inverted)</span></div>
+        <input type="range" id="w-ej" min="0" max="100" value="25">
+        <div class="pct" id="pct-ej">25%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Seismic safety <span>(inverse PGA)</span></div>
+        <input type="range" id="w-seismic" min="0" max="100" value="0">
+        <div class="pct" id="pct-seismic">0%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Flood safety <span>(outside FEMA SFHA)</span></div>
+        <input type="range" id="w-flood" min="0" max="100" value="0">
+        <div class="pct" id="pct-flood">0%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Contamination <span>(distance from EPA TRI facility)</span></div>
+        <input type="range" id="w-contam" min="0" max="100" value="0">
+        <div class="pct" id="pct-contam">0%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Waterway safety <span>(distance from major river)</span></div>
+        <input type="range" id="w-waterway" min="0" max="100" value="0">
+        <div class="pct" id="pct-waterway">0%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Geothermal opportunity <span>(IHFC 2024 heat flow)</span></div>
+        <input type="range" id="w-geo" min="0" max="100" value="0">
+        <div class="pct" id="pct-geo">0%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Terrain flatness <span>(SRTM 90m slope; hard gate &lt;3% flat)</span></div>
+        <input type="range" id="w-flat" min="0" max="100" value="0">
+        <div class="pct" id="pct-flat">0%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Population exposure <span>(residents per km&sup2;, inverted)</span></div>
+        <input type="range" id="w-pop" min="0" max="100" value="0">
+        <div class="pct" id="pct-pop">0%</div>
+      </div>
+
+      <div class="map-note">
+        Score 0&ndash;1 &nbsp;&bull;&nbsp; green = more suitable &nbsp;&bull;&nbsp;
+        red = less suitable &nbsp;&bull;&nbsp;
+        <span style="color:#c8884a;">&#9632;</span> terrain gate &nbsp;&bull;&nbsp;
+        <span style="color:#3a8a3a;">&#9632;</span> protected land gate &nbsp;&bull;&nbsp;
+        white diamond = existing DC &nbsp;&bull;&nbsp; outline diamond = proposed DC
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOP ZCTAs ────────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Top ZCTAs by Composite Score</h2>
+  <p style="font-size:0.85rem;color:var(--muted);margin-bottom:8px;">
+    Top 20 ZCTAs passing both hard gates, ranked by current slider weights.
+    Updates live. Click a row to pan the map to that ZCTA.
+  </p>
+  <button class="expand-btn" onclick="toggleTable('top-table', this)">+ show all scores</button>
+  <table id="top-table">
+    <thead>
+      <tr>
+        <th>ZCTA</th>
+        <th>Grid</th>
+        <th>Water</th>
+        <th>Community</th>
+        <th class="detail-col">Seismic</th>
+        <th class="detail-col">Flood</th>
+        <th class="detail-col">Contam.</th>
+        <th class="detail-col">Waterway</th>
+        <th class="detail-col">Geotherm.</th>
+        <th class="detail-col">Flatness</th>
+        <th class="detail-col">Pop. exp.</th>
+        <th>Composite</th>
+      </tr>
+    </thead>
+    <tbody id="top-tbody">
+      <tr><td colspan="12" style="color:var(--muted);font-family:monospace;font-size:0.82rem;">Loading&hellip;</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── FOOTER ────────────────────────────────────────────────────────── -->
+<footer>
+  <p>
+    &copy; 2026 Simon-Hans Edasi / Edasi M&otilde;tlev LLC &nbsp;&bull;&nbsp;
+    Data: Census ZCTA 2020 (public domain), ACS 2022, OSM (ODbL), Open-Meteo ERA5 (CC-BY 4.0),
+    USGS (public domain), FEMA NFHL (public domain), IHFC 2024 (CC-BY 4.0) &nbsp;&bull;&nbsp;
+    <a href="mailto:simonhansedasi@gmail.com">Contact</a>
+  </p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const STATE = '{{ state_lower }}';
+
+// ── Globals ───────────────────────────────────────────────────────────
+let allZctas  = [];   // {zcta, lat, lng, tx, water, ej, seismic, flood, ...}
+let zctaLayers = {}; // zcta -> Leaflet layer (for pan-to-click in table)
+let gridLayer  = null;
+
+// ── Map init ──────────────────────────────────────────────────────────
+const map = L.map('map', {
+  center: [47.3, -120.5], zoom: 7,
+  zoomControl: true, attributionControl: false
+});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 14 }).addTo(map);
+
+// ── Color scale: red (0) → yellow (0.5) → green (1) ──────────────────
+function scoreColor(s) {
+  s = Math.max(0, Math.min(1, s));
+  let r, g, b;
+  if (s < 0.5) {
+    const t = s * 2;
+    r = Math.round(215 + (252 - 215) * t);
+    g = Math.round(48  + (215 - 48)  * t);
+    b = Math.round(39  + (148 - 39)  * t);
+  } else {
+    const t = (s - 0.5) * 2;
+    r = Math.round(252 + (26  - 252) * t);
+    g = Math.round(215 + (152 - 215) * t);
+    b = Math.round(148 + (80  - 148) * t);
+  }
+  return `rgb(${r},${g},${b})`;
+}
+
+function cellStyle(score) {
+  return { fillColor: scoreColor(score), fillOpacity: 0.72, color: '#1a1a2e', weight: 0.4 };
+}
+
+function scoreClass(s) {
+  return s >= 0.70 ? 'score-hi' : s >= 0.55 ? 'score-mid' : 'score-lo';
+}
+
+// ── Weights ───────────────────────────────────────────────────────────
+const SLIDER_IDS = ['tx','water','ej','seismic','flood','contam','waterway','geo','flat','pop'];
+
+function getWeights() {
+  const raw = SLIDER_IDS.map(id => parseFloat(document.getElementById('w-' + id).value));
+  const total = raw.reduce((a, b) => a + b, 0) || 1;
+  const pcts  = raw.map(v => v / total);
+  SLIDER_IDS.forEach((id, i) => {
+    document.getElementById('pct-' + id).textContent = Math.round(pcts[i] * 100) + '%';
+  });
+  return pcts;
+}
+
+function computeComposite(p, w) {
+  return w[0] * (p.tx_score          || 0)
+       + w[1] * (p.water_score       || 0)
+       + w[2] * (p.ej_score          || 0)
+       + w[3] * (p.seismic_score     || 0)
+       + w[4] * (p.flood_score       || 0)
+       + w[5] * (p.contamination_score || 0)
+       + w[6] * (p.waterway_score    || 0)
+       + w[7] * (p.geothermal_score  || 0)
+       + w[8] * (p.flatness_score    || 0)
+       + w[9] * (p.pop_exposure_score || 0);
+}
+
+// ── Tooltip ───────────────────────────────────────────────────────────
+function tipHtml(p) {
+  const fmt = v => (v !== undefined && v !== null) ? v.toFixed(2) : '&mdash;';
+  return `<b>ZCTA ${p.zcta}</b><br>
+    <span style="color:#8888aa;">Grid:</span> ${fmt(p.tx_score)} &nbsp;
+    <span style="color:#8888aa;">Water:</span> ${fmt(p.water_score)}<br>
+    <span style="color:#8888aa;">Community:</span> ${fmt(p.ej_score)} &nbsp;
+    <span style="color:#8888aa;">Seismic:</span> ${fmt(p.seismic_score)}<br>
+    <span style="color:#8888aa;">Flatness:</span> ${fmt(p.flatness_score)} &nbsp;
+    <span style="color:#8888aa;">Protected:</span> ${fmt(p.protected_score)}`;
+}
+
+// ── Map update ────────────────────────────────────────────────────────
+function updateMap() {
+  if (!gridLayer) return;
+  const w = getWeights();
+  gridLayer.eachLayer(layer => {
+    const p = layer.feature.properties;
+    if (p.flatness_score !== undefined && p.flatness_score === 0) {
+      layer.setStyle({ fillColor: '#3a2808', fillOpacity: 0.82, color: '#7a5010', weight: 0.7 });
+      return;
+    }
+    if (p.protected_score !== undefined && p.protected_score === 0) {
+      layer.setStyle({ fillColor: '#0d2b0d', fillOpacity: 0.82, color: '#2e6030', weight: 0.7 });
+      return;
+    }
+    layer.setStyle(cellStyle(computeComposite(p, w)));
+  });
+  updateTopTable(w);
+}
+
+// ── Top ZCTAs table ───────────────────────────────────────────────────
+function updateTopTable(w) {
+  const tbody = document.getElementById('top-tbody');
+  if (!tbody || allZctas.length === 0) return;
+
+  const scored = allZctas
+    .filter(z => z.flat !== 0 && z.prot !== 0)
+    .map(z => ({ ...z, composite: computeComposite(z._props, w) }))
+    .sort((a, b) => b.composite - a.composite)
+    .slice(0, 20);
+
+  tbody.innerHTML = scored.map(z => {
+    const p = z._props;
+    const fmt = (v, def) => (v !== undefined && v !== null) ? v.toFixed(3) : (def || '&mdash;');
+    return `<tr style="cursor:pointer;" onclick="panToZcta('${z.zcta}')">
+      <td style="font-family:monospace;">${z.zcta}</td>
+      <td class="score-cell ${scoreClass(p.tx_score||0)}">${fmt(p.tx_score)}</td>
+      <td class="score-cell ${scoreClass(p.water_score||0)}">${fmt(p.water_score)}</td>
+      <td class="score-cell ${scoreClass(p.ej_score||0)}">${fmt(p.ej_score)}</td>
+      <td class="score-cell ${scoreClass(p.seismic_score||0)} detail-col">${fmt(p.seismic_score)}</td>
+      <td class="score-cell ${scoreClass(p.flood_score||0)} detail-col">${fmt(p.flood_score)}</td>
+      <td class="score-cell ${scoreClass(p.contamination_score||0)} detail-col">${fmt(p.contamination_score)}</td>
+      <td class="score-cell ${scoreClass(p.waterway_score||0)} detail-col">${fmt(p.waterway_score)}</td>
+      <td class="score-cell ${scoreClass(p.geothermal_score||0)} detail-col">${fmt(p.geothermal_score)}</td>
+      <td class="score-cell ${scoreClass(p.flatness_score||0)} detail-col">${fmt(p.flatness_score)}</td>
+      <td class="score-cell ${scoreClass(p.pop_exposure_score||0)} detail-col">${fmt(p.pop_exposure_score)}</td>
+      <td class="score-cell ${scoreClass(z.composite)}">${z.composite.toFixed(3)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function panToZcta(zcta) {
+  const layer = zctaLayers[zcta];
+  if (layer) map.fitBounds(layer.getBounds(), { maxZoom: 11 });
+}
+
+// ── Load ZCTA grid ────────────────────────────────────────────────────
+fetch('/' + STATE + '/zcta/grid_scores.geojson')
+  .then(r => r.json())
+  .then(data => {
+    gridLayer = L.geoJSON(data, {
+      style: () => cellStyle(0),
+      onEachFeature: (feat, layer) => {
+        const p = feat.properties;
+        layer.bindTooltip(tipHtml(p), { sticky: true, className: 'zcta-tip' });
+        zctaLayers[p.zcta] = layer;
+        const center = layer.getBounds().getCenter();
+        allZctas.push({
+          zcta: p.zcta,
+          lat: center.lat,
+          lng: center.lng,
+          flat: p.flatness_score,
+          prot: p.protected_score,
+          _props: p
+        });
+      }
+    }).addTo(map);
+    updateMap();
+  });
+
+// ── Transmission lines ────────────────────────────────────────────────
+function txStyle(feat) {
+  const raw = (feat.properties.voltage || '').split(';')[0];
+  const v = parseInt(raw, 10) || 0;
+  if (v >= 345000) return { color: '#f5c518', weight: 1.8, opacity: 0.75 };
+  if (v >= 230000) return { color: '#7eb8d4', weight: 1.2, opacity: 0.55 };
+  return                   { color: '#9aaabb', weight: 1.0, opacity: 0.55 };
+}
+fetch('/' + STATE + '/transmission.geojson')
+  .then(r => r.json())
+  .then(data => L.geoJSON(data, { style: txStyle, interactive: false }).addTo(map));
+
+// ── Data center markers ───────────────────────────────────────────────
+function dcIcon(source) {
+  const fill   = source === 'proposed' ? 'transparent' : 'white';
+  const border = source === 'proposed' ? '2px solid #111' : '1.5px solid #333';
+  return L.divIcon({
+    html: `<div style="width:12px;height:12px;background:${fill};border:${border};transform:rotate(45deg);margin:-5px"></div>`,
+    className: '', iconAnchor: [6, 6]
+  });
+}
+fetch('/' + STATE + '/datacenters.geojson')
+  .then(r => r.json())
+  .then(data => {
+    L.geoJSON(data, {
+      pointToLayer: (feat, latlng) => L.marker(latlng, { icon: dcIcon(feat.properties.source) }),
+      onEachFeature: (feat, layer) => {
+        layer.bindTooltip(
+          `<b>${feat.properties.name}</b><br>${feat.properties.operator}`,
+          { className: 'dc-tooltip' }
+        );
+      }
+    }).addTo(map);
+  });
+
+// ── Legend ────────────────────────────────────────────────────────────
+const legend = L.control({ position: 'topright' });
+legend.onAdd = () => {
+  const el = L.DomUtil.create('div');
+  el.style.cssText = 'display:flex;flex-direction:row;gap:8px;align-items:flex-start;';
+  el.innerHTML = `
+    <div style="background:#1a1a2e;border:1px solid #2e2e4a;padding:10px 14px;font-family:monospace;font-size:0.75rem;color:#c8c8e0;line-height:1.9;">
+      <div style="color:#8888aa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Transmission</div>
+      <div><span style="display:inline-block;width:28px;height:3px;background:#f5c518;vertical-align:middle;margin-right:8px;"></span>345+ kV</div>
+      <div><span style="display:inline-block;width:28px;height:2px;background:#7eb8d4;vertical-align:middle;margin-right:8px;"></span>230 kV</div>
+      <div><span style="display:inline-block;width:28px;height:2px;background:#9aaabb;vertical-align:middle;margin-right:8px;"></span>115 kV</div>
+    </div>
+    <div style="background:#1a1a2e;border:1px solid #2e2e4a;padding:10px 14px;font-family:monospace;font-size:0.75rem;color:#c8c8e0;line-height:2.0;">
+      <div style="color:#8888aa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Hard gates</div>
+      <div><span style="display:inline-block;width:14px;height:14px;background:#3a2808;border:1.5px solid #7a5010;vertical-align:middle;margin-right:8px;"></span>Terrain unbuildable</div>
+      <div><span style="display:inline-block;width:14px;height:14px;background:#0d2b0d;border:1.5px solid #2e6030;vertical-align:middle;margin-right:8px;"></span>Federally protected / tribal</div>
+      <div style="color:#666688;font-size:0.7rem;margin-top:4px;">Excluded regardless of weights.</div>
+    </div>
+  `;
+  return el;
+};
+legend.addTo(map);
+
+// ── Table expand/collapse ─────────────────────────────────────────────
+function toggleTable(tableId, btn) {
+  const tbl = document.getElementById(tableId);
+  const expanded = tbl.classList.toggle('table-expanded');
+  btn.textContent = expanded ? '- hide scores' : '+ show all scores';
+}
+
+// ── Slider listeners ─────────────────────────────────────────────────
+SLIDER_IDS.forEach(id => {
+  document.getElementById('w-' + id).addEventListener('input', updateMap);
+});
+</script>
+</body>
+</html>

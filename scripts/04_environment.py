@@ -2,12 +2,12 @@
 04_environment.py — Compute contamination and waterway sensitivity scores.
 
 Adds to grid_scores.geojson:
-  contamination_score — normalized distance to nearest EPA NPL Superfund site
+  contamination_score — normalized distance to nearest EPA TRI industrial facility
                         (1 = far from sites / low contamination risk)
   waterway_score      — normalized distance to nearest major river
                         (1 = far from regulated waterways)
 
-NPL data: EPA Envirofacts REST API (state-filtered, auto-downloaded)
+TRI data: EPA Toxics Release Inventory REST API (state-filtered, auto-downloaded)
 Waterways: OSM Overpass (waterway=river, for state bbox)
 
 Usage:
@@ -37,39 +37,33 @@ DARK_BG = "#1a1a2e"
 WHITE = "white"
 
 
-def fetch_npl_sites(abbr, raw):
-    """Download EPA NPL Superfund sites for the state via Envirofacts REST API."""
-    path = raw / "npl_sites.csv"
+def fetch_tri_facilities(abbr, raw):
+    """Download EPA TRI industrial facilities for the state via Envirofacts REST API."""
+    path = raw / "tri_facilities.csv"
     if path.exists():
         df = pd.read_csv(path)
         if len(df) > 0:
             return df
-    url = f"https://data.epa.gov/efservice/SEMS_ACTIVE_SITES/STATE_CODE/{abbr}/JSON"
+    url = f"https://data.epa.gov/efservice/TRI_FACILITY/STATE_ABBR/{abbr}/JSON"
     try:
         r = requests.get(url, timeout=60, headers={"User-Agent": "datacenter-siting-research/1.0"})
         r.raise_for_status()
         data = r.json()
         if data and isinstance(data, list):
             df = pd.DataFrame(data)
-            lat_col = next((c for c in df.columns if "LAT" in c.upper()), None)
-            lon_col = next((c for c in df.columns if "LON" in c.upper() or "LONG" in c.upper()), None)
-            name_col = next((c for c in df.columns if "NAME" in c.upper()), None)
-            if lat_col and lon_col:
-                df = df.rename(columns={lat_col: "lat", lon_col: "lon"})
-                if name_col:
-                    df = df.rename(columns={name_col: "name"})
-                df["lat"] = pd.to_numeric(df["lat"], errors="coerce")
-                df["lon"] = pd.to_numeric(df["lon"], errors="coerce")
-                df = df.dropna(subset=["lat", "lon"])
-                if len(df) > 0:
-                    df.to_csv(path, index=False)
-                    print(f"  EPA API: {len(df)} NPL sites for {abbr}")
-                    return df[["lat", "lon", "name"] if "name" in df.columns else ["lat", "lon"]]
+            df["lat"] = pd.to_numeric(df.get("pref_latitude"), errors="coerce")
+            # TRI stores longitude as positive — negate to get West-hemisphere coords
+            df["lon"] = -pd.to_numeric(df.get("pref_longitude"), errors="coerce")
+            df["name"] = df.get("facility_name", "")
+            df = df[["lat", "lon", "name"]].dropna(subset=["lat", "lon"])
+            if len(df) > 0:
+                df.to_csv(path, index=False)
+                print(f"  TRI API: {len(df)} facilities for {abbr}")
+                return df
     except Exception as e:
-        print(f"  EPA API failed: {e}")
+        print(f"  TRI API failed: {e}")
 
-    # Fallback: empty (no NPL sites or API unavailable)
-    print(f"  WARNING: No NPL data for {abbr}; contamination_score will be uniform 1.0")
+    print(f"  WARNING: No TRI data for {abbr}; contamination_score will be uniform 1.0")
     df = pd.DataFrame(columns=["lat", "lon", "name"])
     df.to_csv(path, index=False)
     return df
@@ -175,14 +169,14 @@ def main():
     ])
     print(f"Grid: {len(grid)} cells")
 
-    print("EPA NPL Superfund sites (contamination_score)...")
-    npl_df = fetch_npl_sites(cfg["abbr"], raw)
-    if len(npl_df) > 0:
-        npl_gdf = gpd.GeoDataFrame(npl_df,
-                                   geometry=gpd.points_from_xy(npl_df["lon"], npl_df["lat"]),
+    print("EPA TRI industrial facilities (contamination_score)...")
+    tri_df = fetch_tri_facilities(cfg["abbr"], raw)
+    if len(tri_df) > 0:
+        tri_gdf = gpd.GeoDataFrame(tri_df,
+                                   geometry=gpd.points_from_xy(tri_df["lon"], tri_df["lat"]),
                                    crs=CRS).to_crs(crs_proj)
-        npl_coords = np.column_stack([npl_gdf.geometry.x, npl_gdf.geometry.y])
-        tree = cKDTree(npl_coords)
+        tri_coords = np.column_stack([tri_gdf.geometry.x, tri_gdf.geometry.y])
+        tree = cKDTree(tri_coords)
         dist, _ = tree.query(centroids_proj, k=1)
         grid["contamination_score"] = dist / dist.max()
     else:

@@ -2,9 +2,15 @@
 02_indicators.py — Build fishnet grid and compute stress indicators.
 
 Creates grid_scores.geojson with columns:
-  tx_score    — proximity to HV transmission (1 = adjacent)
-  water_score — 30-yr mean annual precipitation (1 = highest / least stressed)
-  ej_score    — 1 - Census ACS demographic burden (1 = least burdened)
+  cell_id            — integer fishnet cell index
+  tx_score           — proximity to HV transmission (1 = adjacent)
+  water_score        — 30-yr mean annual precipitation (1 = highest / least stressed)
+  ej_score           — 1 - Census ACS demographic burden (1 = least burdened)
+  pop_exposure_score — 1 - population density per km² (1 = fewest residents)
+
+Base geography: 0.15° fishnet grid (~14 km at mid-latitudes). Uniform coverage across
+the full state regardless of population density — intentional for physical suitability
+scoring where every part of the state is a candidate.
 
 Reads:  data/{STATE}/raw/state.geojson, transmission.geojson
 Writes: data/{STATE}/grid_scores.geojson
@@ -35,20 +41,21 @@ from config import get_state, get_paths
 
 warnings.filterwarnings("ignore")
 CRS = "EPSG:4326"
-CELL_SIZE = 0.15
 DARK_BG = "#1a1a2e"
 WHITE = "white"
+CELL_SIZE = 0.15
 
 
 def create_fishnet(state_gdf, cell_size=CELL_SIZE):
-    xmin, ymin, xmax, ymax = state_gdf.total_bounds
-    xs = np.arange(xmin, xmax + cell_size, cell_size)
-    ys = np.arange(ymin, ymax + cell_size, cell_size)
-    cells = [box(x, y, x + cell_size, y + cell_size) for x in xs[:-1] for y in ys[:-1]]
-    grid = gpd.GeoDataFrame({"geometry": cells}, crs=CRS)
+    """Create uniform grid clipped to state boundary."""
+    minx, miny, maxx, maxy = state_gdf.total_bounds
+    cols = np.arange(minx, maxx, cell_size)
+    rows = np.arange(miny, maxy, cell_size)
+    polygons = [box(x, y, x + cell_size, y + cell_size) for x in cols for y in rows]
+    grid = gpd.GeoDataFrame({"geometry": polygons}, crs=CRS)
     state_union = state_gdf.geometry.unary_union
-    grid = grid[grid.centroid.within(state_union)].reset_index(drop=True)
-    grid["cell_id"] = range(len(grid))
+    grid = grid[grid.geometry.centroid.within(state_union)].reset_index(drop=True)
+    grid["cell_id"] = grid.index
     return grid
 
 
@@ -66,46 +73,58 @@ def load_census_key():
     )
 
 
-def fetch_acs(fips, raw):
+def fetch_tracts(state_fips, raw):
+    """Download Census TIGER tract boundaries for the state."""
+    path = raw / "tracts.geojson"
+    if path.exists():
+        return gpd.read_file(path)
+    url = f"https://www2.census.gov/geo/tiger/TIGER2022/TRACT/tl_2022_{state_fips}_tract.zip"
+    print(f"  Downloading tract boundaries for FIPS {state_fips}...")
+    r = requests.get(url, timeout=60)
+    r.raise_for_status()
+    shp_dir = raw / "tracts_shp"
+    shp_dir.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(io.BytesIO(r.content)) as z:
+        z.extractall(shp_dir)
+    tracts = gpd.read_file(shp_dir / f"tl_2022_{state_fips}_tract.shp").to_crs(CRS)
+    tracts.to_file(path, driver="GeoJSON")
+    print(f"  Saved {len(tracts)} tracts to {path.name}")
+    return tracts
+
+
+def fetch_acs(state_fips, raw):
+    """Download ACS 5-year tract-level demographic data."""
     path = raw / "acs_demog.csv"
     if path.exists():
-        return pd.read_csv(path, dtype={"GEOID": str})
+        df = pd.read_csv(path, dtype={"GEOID": str})
+        if "pop" in df.columns and "GEOID" in df.columns:
+            return df
+        print("  Cache missing required columns; re-fetching ACS data...")
     key = load_census_key()
     params = {
-        "get": "NAME,B17001_001E,B17001_002E,B02001_001E,B02001_002E",
+        "get": "NAME,B17001_001E,B17001_002E,B02001_001E,B02001_002E,B01003_001E",
         "for": "tract:*",
-        "in": f"state:{fips}",
+        "in": f"state:{state_fips}",
         "key": key,
     }
+    print(f"  Downloading ACS 5-year tract data for FIPS {state_fips}...")
     r = requests.get("https://api.census.gov/data/2022/acs/acs5", params=params, timeout=60)
     r.raise_for_status()
     rows = r.json()
     df = pd.DataFrame(rows[1:], columns=rows[0])
-    for col in ["B17001_001E", "B17001_002E", "B02001_001E", "B02001_002E"]:
+    for col in ["B17001_001E", "B17001_002E", "B02001_001E", "B02001_002E", "B01003_001E"]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
-    df["GEOID"] = df["state"].str.zfill(2) + df["county"].str.zfill(3) + df["tract"].str.zfill(6)
+    df["GEOID"] = (
+        df["state"].str.zfill(2) + df["county"].str.zfill(3) + df["tract"].str.zfill(6)
+    )
     df["poverty_rate"] = (df["B17001_002E"] / df["B17001_001E"]).clip(0, 1)
     df["minority_rate"] = (1 - df["B02001_002E"] / df["B02001_001E"]).clip(0, 1)
     df["demog_index"] = (df["poverty_rate"] + df["minority_rate"]) / 2
-    df.to_csv(path, index=False)
-    print(f"  Saved {len(df)} tracts to {path.name}")
-    return df
-
-
-def fetch_tracts(fips, raw):
-    path = raw / "tracts.geojson"
-    if path.exists():
-        return gpd.read_file(path)
-    url = f"https://www2.census.gov/geo/tiger/TIGER2022/TRACT/tl_2022_{fips}_tract.zip"
-    r = requests.get(url, timeout=60)
-    r.raise_for_status()
-    with zipfile.ZipFile(io.BytesIO(r.content)) as z:
-        z.extractall(raw / "_tracts_shp")
-    shp = next((raw / "_tracts_shp").glob("*.shp"))
-    tracts = gpd.read_file(shp).to_crs(CRS)
-    tracts.to_file(path, driver="GeoJSON")
-    print(f"  Saved {len(tracts)} tracts to {path.name}")
-    return tracts
+    df["pop"] = df["B01003_001E"]
+    out = df[["GEOID", "poverty_rate", "minority_rate", "demog_index", "pop"]].copy()
+    out.to_csv(path, index=False)
+    print(f"  Saved {len(out)} tracts to {path.name}")
+    return out
 
 
 def fetch_precip(state_gdf, raw):
@@ -153,13 +172,14 @@ def idw(src_lats, src_lons, src_vals, tgt_lats, tgt_lons, power=2):
 
 def plot_indicators(cfg, state, dc_gdf, grid, processed):
     layers = [
-        ("tx_score",    "Transmission Proximity",    "(1 = adjacent to HV line)"),
-        ("water_score", "Water Availability",         "(1 = highest precip)"),
-        ("ej_score",    "Community Burden",           "(1 = lowest demographic burden)"),
+        ("tx_score",           "Transmission Proximity",  "(1 = adjacent to HV line)"),
+        ("water_score",        "Water Availability",       "(1 = highest precip)"),
+        ("ej_score",           "Community Burden",         "(1 = lowest demographic burden)"),
+        ("pop_exposure_score", "Population Exposure",      "(1 = fewest residents in vicinity)"),
     ]
     plt.rcParams.update({"text.color": WHITE, "axes.labelcolor": WHITE,
                          "xtick.color": WHITE, "ytick.color": WHITE, "font.size": 16})
-    fig, axes = plt.subplots(1, 3, figsize=(24, 9), facecolor=DARK_BG)
+    fig, axes = plt.subplots(1, 4, figsize=(32, 9), facecolor=DARK_BG)
     for ax, (col, title, subtitle) in zip(axes, layers):
         ax.set_facecolor(DARK_BG)
         state.boundary.plot(ax=ax, color="#4a4a6a", linewidth=1.0, zorder=1)
@@ -206,7 +226,7 @@ def main():
     tx_gdf = gpd.read_file(raw / "transmission.geojson") if (raw / "transmission.geojson").exists() else \
              gpd.GeoDataFrame(columns=["geometry"], crs=CRS)
 
-    print(f"Creating {CELL_SIZE}-degree fishnet...")
+    print(f"Building {CELL_SIZE}° fishnet grid...")
     grid = create_fishnet(state)
     print(f"  {len(grid)} cells")
 
@@ -235,29 +255,58 @@ def main():
     print(f"  water_score: {grid['water_score'].min():.3f} - {grid['water_score'].max():.3f}")
 
     print("Community burden / EJ score (ej_score)...")
-    df_acs = fetch_acs(cfg["fips"], raw)
     tracts = fetch_tracts(cfg["fips"], raw)
+    df_acs = fetch_acs(cfg["fips"], raw)
     tracts["GEOID"] = tracts["GEOID"].astype(str).str.zfill(11)
     df_acs["GEOID"] = df_acs["GEOID"].astype(str).str.zfill(11)
-    ej_gdf = tracts[["GEOID", "geometry"]].merge(df_acs[["GEOID", "demog_index"]], on="GEOID", how="left")
-    grid_pts = gpd.GeoDataFrame({"cell_id": grid["cell_id"]},
-                                geometry=grid.geometry.centroid, crs=CRS)
-    joined = gpd.sjoin(grid_pts, ej_gdf[["GEOID", "demog_index", "geometry"]],
-                       how="left", predicate="within")
-    burden = joined.groupby("cell_id")["demog_index"].mean()
-    grid["demog_burden"] = grid["cell_id"].map(burden)
-    q01, q99 = grid["demog_burden"].quantile([0.01, 0.99])
-    grid["ej_score"] = 1.0 - ((grid["demog_burden"] - q01) / (q99 - q01)).clip(0, 1)
+    ej_gdf = tracts[["GEOID", "geometry"]].merge(
+        df_acs[["GEOID", "demog_index"]], on="GEOID", how="left"
+    )
+    grid_pts = gpd.GeoDataFrame(
+        {"cell_id": grid["cell_id"]}, geometry=grid.geometry.centroid, crs=CRS
+    )
+    joined = gpd.sjoin(
+        grid_pts, ej_gdf[["GEOID", "demog_index", "geometry"]],
+        how="left", predicate="within"
+    )
+    burden_by_cell = joined.groupby("cell_id")["demog_index"].mean()
+    grid["demog_index"] = grid["cell_id"].map(burden_by_cell)
+    q01, q99 = grid["demog_index"].quantile([0.01, 0.99])
+    grid["ej_score"] = 1.0 - ((grid["demog_index"] - q01) / (q99 - q01)).clip(0, 1)
     grid["ej_score"] = grid["ej_score"].fillna(grid["ej_score"].median())
     print(f"  ej_score: {grid['ej_score'].min():.3f} - {grid['ej_score'].max():.3f}")
 
-    grid_out = grid.drop(columns=["tx_dist_m", "ann_precip_mm", "demog_burden"], errors="ignore")
+    print("Population exposure (pop_exposure_score)...")
+    tracts_pop = tracts[["GEOID", "geometry"]].merge(
+        df_acs[["GEOID", "pop"]], on="GEOID", how="left"
+    )
+    tracts_proj = tracts_pop.to_crs(crs_proj).copy()
+    tracts_proj["area_km2"] = tracts_proj.geometry.area / 1e6
+    tracts_proj["pop_density"] = tracts_proj["pop"] / tracts_proj["area_km2"].clip(lower=0.01)
+    tracts_pop["pop_density"] = tracts_proj["pop_density"].values
+    grid_pts2 = gpd.GeoDataFrame(
+        {"cell_id": grid["cell_id"]}, geometry=grid.geometry.centroid, crs=CRS
+    )
+    joined_pop = gpd.sjoin(
+        grid_pts2, tracts_pop[["pop_density", "geometry"]],
+        how="left", predicate="within"
+    )
+    density_by_cell = joined_pop.groupby("cell_id")["pop_density"].mean()
+    grid["pop_density"] = grid["cell_id"].map(density_by_cell).fillna(0)
+    p95_dens = grid["pop_density"].quantile(0.95)
+    grid["pop_exposure_score"] = (1.0 - (grid["pop_density"] / p95_dens).clip(0, 1))
+    print(f"  pop_exposure_score: {grid['pop_exposure_score'].min():.3f} - {grid['pop_exposure_score'].max():.3f}")
+
+    grid_out = grid.drop(
+        columns=["tx_dist_m", "ann_precip_mm", "demog_index", "pop_density"],
+        errors="ignore",
+    )
     grid_out.to_file(grid_path, driver="GeoJSON")
     print(f"\nSaved grid ({len(grid_out)} cells) to {grid_path.name}")
 
     print("Indicator map...")
     plot_indicators(cfg, state, dc_gdf, grid_out, processed)
-    print(f"Done.")
+    print("Done.")
 
 
 if __name__ == "__main__":

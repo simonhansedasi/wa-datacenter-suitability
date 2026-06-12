@@ -38,15 +38,19 @@ The script also reads from `/home/simonhans/coding/snotrac/.env` automatically.
 ### 3. IHFC heat flow shapefile (required for step 05)
 
 The geothermal score uses the IHFC Global Heat Flow Database 2024. The global shapefile
-must already be present at:
+must be placed manually at:
 
 ```
-data/raw/IHFC_2024_GHFDB.shp
+data/raw/IHFC_2024_GHFDB.shp   (+ .dbf, .prj, .shx, .cpg, .qmd)
 ```
 
-The pipeline will filter it to your target state's bounding box and cache the result.
-If the file is missing, step 05 still runs but sets `geothermal_score = 0.5` for all
-cells and prints a warning.
+Download from [ihfc-iugg.org](https://ihfc-iugg.org/products/global-heat-flow-database)
+or the IHFC data portal. Note: the `.dbf` companion file is ~1.4 GB — it is not committed
+to this repository and must be downloaded separately.
+
+The pipeline will filter it to your target state's bounding box and cache the result in
+`data/{STATE}/raw/heatflow.csv`. If the shapefile is missing, step 05 still runs but
+sets `geothermal_score = 0.5` for all cells and prints a warning.
 
 ---
 
@@ -81,17 +85,9 @@ python scripts/run_pipeline.py WA --only 06 07
 
 ### Deploy to the web app
 
-After a successful run, copy the output to `static/` so the Flask app picks it up:
-
-```bash
-python scripts/run_pipeline.py WA --deploy
-```
-
-Or deploy separately after the run:
-
-```bash
-cp data/WA/grid_scores.geojson static/grid_scores.geojson
-```
+After a successful run, rsync the state data to the DO server (see "Deploying a state
+audit" section below). The Flask app reads `data/{STATE}/grid_scores.geojson` directly —
+no `static/` copy is needed.
 
 ---
 
@@ -109,7 +105,7 @@ data/{STATE}/
         precip_coarse.csv       — Open-Meteo ERA5 precip sample points (step 02)
         seismic_sample.csv      — USGS ASCE 7-22 sample points (step 03)
         sfha.geojson            — FEMA NFHL flood zones (step 03)
-        npl_sites.csv           — EPA Superfund NPL sites (step 04)
+        tri_facilities.csv      — EPA TRI facility locations (step 04)
         rivers.geojson          — OSM major rivers (step 04)
         heatflow.csv            — IHFC boreholes filtered to bbox (step 05)
         srtm_tiles/             — SRTM1 HGT elevation tiles (step 06)
@@ -182,9 +178,10 @@ Builds the 0.15-degree fishnet grid and computes three scores.
 
 ### Step 04 — Environmental risk
 
-- **contamination_score**: fetches EPA Superfund NPL sites from the Envirofacts REST
-  API, then computes distance from each cell centroid to the nearest site. If the API
-  returns no results, score defaults to 1.0 (neutral) with a warning.
+- **contamination_score**: fetches EPA TRI (Toxic Release Inventory) facility locations
+  from the Envirofacts `TRI_FACILITY` endpoint, then computes distance from each cell
+  centroid to the nearest facility. If the API returns no results, score defaults to 1.0
+  (neutral) with a warning.
 - **waterway_score**: fetches major rivers (waterway=river) from OSM Overpass for the
   state bbox, then computes distance from each centroid to the nearest river segment.
   If OSM returns nothing, score defaults to 1.0 (neutral) with a warning.
@@ -303,17 +300,17 @@ a WARNING is printed. This means the FEMA NFHL service may be temporarily down; 
 
 ---
 
-### EPA NPL API returns no data (step 04)
+### EPA TRI API returns no data (step 04)
 
 ```
-WARNING: No NPL data for {STATE}; contamination_score will be uniform 1.0
+WARNING: No TRI facility data for {STATE}; contamination_score will be uniform 1.0
 ```
 
-The EPA Envirofacts API (`/SEMS_ACTIVE_SITES/STATE_CODE/{STATE}`) is sometimes
-unavailable or returns 0 results for states with very few NPL sites. Two options:
+The EPA Envirofacts `TRI_FACILITY` endpoint is sometimes unavailable or returns 0
+results. Two options:
 
-1. Delete `data/{STATE}/raw/npl_sites.csv` and re-run step 04 to retry the API.
-2. Provide a manual CSV: create `data/{STATE}/raw/npl_sites.csv` with columns
+1. Delete `data/{STATE}/raw/tri_facilities.csv` and re-run step 04 to retry the API.
+2. Provide a manual CSV: create `data/{STATE}/raw/tri_facilities.csv` with columns
    `lat`, `lon`, `name` and re-run step 04.
 
 ---
