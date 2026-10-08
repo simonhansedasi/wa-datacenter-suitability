@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fire History and Risk: Washington Data-Center Sites</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --surface: #1a1a2e;
+    --border: #2e2e4a;
+    --text: #e0e0f0;
+    --muted: #8888aa;
+    --accent: #5b8dee;
+    --green: #4caf82;
+    --red: #e05c5c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Georgia', serif; line-height: 1.7; }
+  a { color: var(--accent); }
+  a:hover { text-decoration: underline; }
+
+  header { max-width: 860px; margin: 0 auto; padding: 60px 24px 40px; border-bottom: 1px solid var(--border); }
+  header h1 { font-size: 2rem; line-height: 1.25; margin-bottom: 16px; }
+  header .byline { color: var(--muted); font-size: 0.9rem; font-family: monospace; }
+  header .lede { margin-top: 20px; font-size: 1.1rem; color: #c0c0d8; border-left: 3px solid var(--accent); padding-left: 16px; }
+
+  .section { max-width: 860px; margin: 0 auto; padding: 48px 24px; border-bottom: 1px solid var(--border); }
+  h2 { font-size: 1.4rem; margin-bottom: 12px; color: #d0d0ee; }
+  h3 { font-size: 1.1rem; margin: 28px 0 8px; color: #c0c0dd; }
+  p { margin-bottom: 14px; color: #c8c8e0; }
+
+  .map-wrapper { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-top: 20px; }
+  #map { height: 560px; background: var(--surface); }
+  /* WHP raster is native 270m/px -- browser image-smoothing blurs it when zoomed in past that,
+     which visually reads as "misaligned" against the crisp vector perimeter/marker layers even
+     though the georeferencing is correct. Crisp pixels are honest about the data's real resolution. */
+  .whp-raster { image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; }
+  .legend {
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 12px 20px; display: flex; gap: 18px; align-items: center;
+    font-family: monospace; font-size: 0.76rem; color: var(--muted); flex-wrap: wrap;
+  }
+  .legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .legend .sw { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: middle; }
+  .legend .sw-line { display: inline-block; width: 16px; height: 0; border-top: 2px dashed #b8b8c8; margin-right: 6px; vertical-align: middle; }
+  .map-note { font-size: 0.78rem; color: var(--muted); margin-top: 10px; font-family: monospace; }
+
+  .findings-grid { display: grid; grid-template-columns: 1fr; gap: 28px; margin-top: 24px; }
+  .finding { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 20px; }
+  .finding .number { font-family: monospace; font-size: 2rem; color: var(--border); float: left; margin-right: 10px; line-height: 1; }
+  .finding h3 { margin-top: 0; font-size: 1rem; }
+  .finding p { font-size: 0.9rem; margin-bottom: 0; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.88rem; }
+  th { background: var(--surface); color: var(--muted); font-family: monospace; font-weight: normal; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: #c8c8e0; }
+  tr:last-child td { border-bottom: none; }
+  .num { text-align: right; font-family: monospace; }
+  .score-cell { font-family: monospace; font-weight: bold; }
+  .tag-vhigh { color: var(--red); }
+  .tag-high { color: #e0824a; }
+  .tag-mod { color: #e0c060; }
+  .tag-low { color: var(--green); }
+  .tag-nb { color: var(--muted); }
+  .table-scroll { overflow-x: auto; }
+
+  .caveat { background: var(--surface); border: 1px solid #6b5a1f; border-left: 3px solid #e0c060; border-radius: 6px; padding: 16px 20px; font-size: 0.9rem; }
+
+  .repro { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; font-size: 0.85rem; font-family: monospace; color: var(--muted); line-height: 1.9; }
+  .repro a { color: var(--accent); }
+
+  footer { max-width: 860px; margin: 0 auto; padding: 32px 24px 64px; }
+  footer p { font-size: 0.8rem; color: var(--muted); font-family: monospace; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Fire History and Risk: Washington Data-Center Sites</h1>
+  <p class="byline">Simon-Hans Edasi &nbsp;/&nbsp; Merascope</p>
+  <p class="lede">
+    Following the water-stress finding, this checks Washington data-center sites against two real
+    fire layers instead of one invented composite: MTBS's actual historical burn perimeters, and
+    the U.S. Forest Service's own Wildfire Hazard Potential index -- not a temperature-and-history
+    model built for this page.
+  </p>
+</header>
+
+<!-- ── MAP ──────────────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>WA Fire History and Hazard Potential</h2>
+  <p>
+    Every real MTBS burn perimeter mapped in Washington since 1984 is outlined in dashed grey.
+    The shaded overlay is the USFS Wildfire Hazard Potential raster, shown at its native pixel
+    resolution (270m) rather than converted into artificial zones. Where the two disagree --
+    ground that actually burned but that WHP's fuel model still calls "non-burnable" -- is
+    highlighted in <strong>purple</strong>: WHP's documented blind spot for agricultural/CRP
+    grassland (see caveat below), not a data error. White diamonds are real, tracked data-center
+    sites (solid = confirmed by 2+ independent sources, outline = single-source).
+  </p>
+  <div class="map-wrapper">
+    <div id="map"></div>
+    <div class="legend">
+      <span><span class="sw" style="background:#4caf82"></span>hazard: very low/low</span>
+      <span><span class="sw" style="background:#e0c060"></span>moderate</span>
+      <span><span class="sw" style="background:#e0824a"></span>high</span>
+      <span><span class="sw" style="background:#e05c5c"></span>very high</span>
+      <span><span class="sw" style="background:#3c3c4b"></span>non-burnable (urban/ag)</span>
+      <span><span class="sw" style="background:#9b59b6"></span>blind spot: burned, modeled non-burnable</span>
+      <span><span class="sw-line"></span>burned 1984-2024 (real MTBS perimeter)</span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:white;border:1.5px solid #333;transform:rotate(45deg);margin-right:6px;"></span>data center (confirmed)</span>
+    </div>
+  </div>
+  <p class="map-note">Burn perimeters: MTBS (mtbs.gov), simplified for display, clipped to WA. Hazard raster: USFS Wildfire Hazard Potential 2020 (firelab.org), masked to WA's real boundary. Data-center sites: merascope's datacenters.db (scripts/dc_tracker.py).</p>
+</div>
+
+<!-- ── FINDINGS ─────────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Key Findings</h2>
+  <div class="findings-grid">
+    <div class="finding">
+      <div class="number">1</div>
+      <h3>Microsoft's own East Wenatchee campus sits inside a documented historical fire perimeter</h3>
+      <p>
+        EAT06/EAT09 (under construction) sits directly inside the 2005 Badger Road Fire's MTBS-mapped
+        perimeter (3,993 acres). WHP's own hazard-potential model reads that same ground as "low" --
+        the agency-scored risk index does not know a real fire already burned there once. This is the
+        only confirmed WA site of {{ dc_sites|length }} that sits inside any of the {{ n_perimeters }}
+        MTBS-mapped fire perimeters since {{ year_min }}; every other site's own parcel reads
+        "non-burnable" or "low" on WHP and sits outside every mapped perimeter -- expected, since data
+        centers are mostly built on developed or irrigated agricultural land. EAT06/EAT09 is the
+        exception, and it's real: land that has already burned once, not a model estimate.
+      </p>
+    </div>
+    <div class="finding">
+      <div class="number">2</div>
+      <h3>Real fire history puts the rest of the Quincy/Malaga cluster closer than the hazard model alone suggests</h3>
+      <p>
+        WHP's fuel model reads agricultural and CRP grassland as non-burnable by definition -- the
+        same land class that carried the 2020 Pearl Hill and Cold Springs fires (187,000-218,000
+        acres each) through this exact shrub-steppe interior. Checking distance to an actual MTBS
+        burn perimeter instead of the model closes that gap: Microsoft's Malaga campus sits just
+        0.9 km from a real historical fire (1.4 km from WHP high/very-high hazard land); the Quincy
+        cluster (Microsoft Quincy Campus, H5, Sabey) sits 3.8-4.3 km out; Amazon's proposed Wallula
+        Gap site sits 7.9 km out. Every Seattle-metro site sits 47-50 km from any historical burn on
+        record, in agreement with the model there. Two independent signals, and where they disagree,
+        the real fire history is the one that already happened.
+      </p>
+    </div>
+    <div class="finding">
+      <div class="number">3</div>
+      <h3>{{ '%.1f'|format(burned_share_pct) }}% of Washington has burned at least once since {{ year_min }}</h3>
+      <p>
+        Area-weighted (Monte Carlo estimate, n={{ n_samples }}), concentrated in the forested and
+        shrub-steppe interior -- eastern Washington's 2014-2020 megafire run (North Star, Pearl
+        Hill, Cold Springs, Tunk Block, all &ge;180,000 acres) accounts for a large share of it.
+        {{ '%.1f'|format(high_hazard_share_pct) }}% of the state reads WHP "high" and
+        {{ '%.1f'|format(very_high_hazard_share_pct) }}% reads "very high" hazard potential today --
+        neither of which the current WA data-center corridor (Quincy, Malaga, Puget Sound) sits on
+        directly.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ── DATA TABLES ──────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>The Data</h2>
+  <h3>Fires &ge; {{ '{:,}'.format(large_fire_threshold) }} acres in the MTBS record ({{ large_fires|length }} rows)</h3>
+  <div class="table-scroll">
+  <table>
+    <tr><th>Fire</th><th class="num">Year</th><th class="num">Acres</th><th>MTBS assessment</th></tr>
+    {% for row in large_fires %}
+    <tr>
+      <td>{{ row.name }}</td>
+      <td class="num">{{ row.year }}</td>
+      <td class="num">{{ '{:,.0f}'.format(row.acres) if row.acres else '—' }}</td>
+      <td>{{ row.assessment_type or '—' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  <p class="map-note">"MTBS assessment" is MTBS's own mapping-methodology label (Initial/Extended/Comprehensive) -- not a burn-severity class. MTBS's boundary product has no single per-fire severity field; severity (dNBR) is a separate raster per fire that this table does not attempt to summarize.</p>
+
+  <h3>Confirmed WA data-center sites vs. fire history and hazard</h3>
+  <div class="table-scroll">
+  <table>
+    <tr><th>Site</th><th>Operator</th><th>City</th><th>On-site WHP</th><th>Historical burn</th><th class="num">Nearest burn (real)</th><th class="num">Nearest hazard (model)</th></tr>
+    {% for row in dc_sites %}
+    <tr>
+      <td>{{ row.name }}{% if row.status == 'proposed' %} <em style="color:var(--muted)">(proposed)</em>{% elif row.status == 'under_construction' %} <em style="color:var(--muted)">(under construction)</em>{% endif %}</td>
+      <td>{{ row.operator }}</td><td>{{ row.city }}</td>
+      <td class="{{ 'tag-vhigh' if row.whp_class == 5 else ('tag-high' if row.whp_class == 4 else ('tag-mod' if row.whp_class == 3 else ('tag-nb' if row.whp_class == 6 else 'tag-low'))) }}">{{ row.whp_label or '—' }}</td>
+      <td>{% if row.in_perimeter %}yes, {{ row.perimeter_year }} ({{ row.perimeter_name }}){% else %}none on record{% endif %}</td>
+      <td class="num">{{ '%.1f'|format(row.nearest_burned_km) }} km</td>
+      <td class="num">{{ row.nearest_hazard_km ~ ' km' if row.nearest_hazard_km is not none else '> 11 km' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  <p class="map-note">{{ dc_sites|length }} sites, all confirmed by 2+ independent sources in merascope's datacenters.db (scripts/dc_tracker.py). "Nearest burn (real)" is distance to the nearest actual MTBS perimeter -- not model-dependent. "Nearest hazard (model)" searches a ~10.8 km window around each site for a WHP high/very-high pixel; "&gt; 11 km" means none found in that window, not that none exists further out. The two disagree most where WHP's fuel model reads agricultural/grassland as non-burnable but real fire has reached closer -- see the caveat below.</p>
+</div>
+
+<!-- ── EVIDENCE / METHODOLOGY ───────────────────────────────────────── -->
+<div class="section">
+  <h2>Evidence &amp; Methodology</h2>
+  <p>
+    History: MTBS (Monitoring Trends in Burn Severity) burned-area boundary shapefile, clipped to
+    Washington, real digitized fire perimeters back to 1984. Risk: USFS Wildfire Hazard Potential
+    2020, the classified 1-5 product (same "very low" to "very high" classes USFS publishes
+    publicly), read directly rather than building a temperature-and-history composite for this
+    page -- an agency-scored index folding in fuel, weather, topography, and historical occurrence
+    already, not a number invented here.
+  </p>
+  <div class="caveat" style="margin-top: 18px;">
+    <strong>What this doesn't measure:</strong> WHP's land-cover model reads developed and
+    agricultural land as "non-burnable" by definition -- including Conservation Reserve Program
+    grassland, which is exactly what carried the 2020 Pearl Hill and Cold Springs fires (187,000 -
+    218,000 acres each) through the same shrub-steppe interior this map shows as low-hazard on the
+    fuel-model layer. This is a real, published limitation of the national WHP product, not
+    something specific to this page -- USFS's own Wildfire Risk to Communities documentation
+    confirms the default fuel models don't simulate fire spread across cropland or CRP grassland
+    at all, and some states (Montana, for one) have built custom fuel models specifically to patch
+    this gap for their own risk assessments; Washington hasn't, in the national product used here.
+    <strong>The purple areas on the map above are exactly this overlap</strong> -- real MTBS burn
+    perimeters sitting on ground WHP still calls non-burnable, made visible directly rather than
+    left as a paragraph you have to take on faith. It's also why this page never blends WHP and
+    MTBS into one invented score: two independent datasets that can disagree, and do disagree in
+    an explicable, externally-documented way, are more trustworthy than one composite number that
+    would have hidden this. That disagreement is patched, not papered over, by the "nearest burn
+    (real)" column in the table above: it comes from actual MTBS fire perimeters, so it doesn't
+    share WHP's blind spot -- it's the same column that caught EAT06/EAT09 sitting directly inside
+    the 2005 Badger Road perimeter (Finding 1) and put Malaga just 0.9 km from real fire history
+    (Finding 2), closer than the hazard model alone suggested. Treat the on-site WHP class as a
+    fuel-model read, not a guarantee against grass-fire
+    risk. Separately, the MTBS record's identification of individual named fires is not exhaustive
+    by name -- large multi-fire complexes are sometimes mapped under
+    their original component-fire names rather than a merged complex name, so a search for one
+    specific historical fire by name may not surface it even though its burned ground is present
+    in the dataset under a different name.
+  </div>
+</div>
+
+<!-- ── REPRODUCIBILITY ──────────────────────────────────────────────── -->
+<div class="section" style="border-bottom: none;">
+  <h2>Reproducibility</h2>
+  <div class="repro">
+    <div>Source: {{ source }}</div>
+    <div>Raw data (JSON): the numbers on this page are a snapshot generated {{ generated_at }}</div>
+    <div>Generated: {{ generated_at }}</div>
+  </div>
+</div>
+
+<footer>
+  <p>Siting the Grid -- a Merascope data finding. Full methodology and pipeline source at <a href="https://merascope.com/#/methodology">merascope.com/#/methodology</a>.</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map = L.map('map', { zoomControl: true, attributionControl: false });
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 14 }).addTo(map);
+
+fetch('/reports/wa_fire_perimeters.geojson').then(r => r.json()).then(function (fc) {
+  const layer = L.geoJSON(fc, {
+    // Dashed outline, no fill -- lets the WHP raster underneath (including the purple
+    // blind-spot highlight) show through cleanly instead of competing with a filled
+    // polygon. Year is still in the popup on click, just not encoded by outline color
+    // anymore -- see report_wa_fire_risk.html's CONTEXT.md history for why.
+    style: function (feat) {
+      return { fillOpacity: 0, color: '#d8d8e8', weight: 1.5, dashArray: '4,3' };
+    },
+    onEachFeature: function (feat, lyr) {
+      const p = feat.properties;
+      lyr.bindPopup(
+        '<strong>' + (p.name || 'Unnamed fire') + '</strong><br>' +
+        'Year: ' + (p.year || 'unknown') + '<br>' +
+        'Size: ' + (p.acres ? p.acres.toLocaleString() + ' acres' : 'unknown') + '<br>' +
+        'Area: ' + p.area_km2.toLocaleString() + ' km&sup2;'
+      );
+    }
+  }).addTo(map);
+  map.fitBounds(layer.getBounds().pad(0.02));
+}).catch(function () {
+  map.setView([47.4, -120.5], 7);
+});
+
+fetch('/reports/whp_wa_bounds.json').then(r => r.json()).then(function (bounds) {
+  L.imageOverlay('/reports/whp_wa.png', bounds, { opacity: 0.75, className: 'whp-raster' }).addTo(map);
+}).catch(function () {});
+
+// ── Real, tracked WA data-center sites (merascope/datacenters.db via
+// dc_tracker.py export-geojson) -- solid diamond = 2+ independent sources
+// agree, outline = single-source/unconfirmed. Never fabricated markers.
+function dcIcon(confirmed) {
+  const fill = confirmed ? 'white' : 'transparent';
+  const border = confirmed ? '1.5px solid #333' : '2px solid #111';
+  return L.divIcon({
+    html: `<div style="width:12px;height:12px;background:${fill};border:${border};transform:rotate(45deg);margin:-5px"></div>`,
+    className: '', iconAnchor: [6, 6]
+  });
+}
+
+fetch('/reports/tracked_datacenters.geojson').then(r => r.json()).then(function (fc) {
+  fc.features.filter(f => f.properties.state === 'WA').forEach(function (feat) {
+    const p = feat.properties;
+    const [lon, lat] = feat.geometry.coordinates;
+    const marker = L.marker([lat, lon], { icon: dcIcon(p.confirmed) }).addTo(map);
+    marker.bindPopup(
+      '<strong>' + p.name + '</strong><br>' + (p.operator || '') + ', ' + (p.city || '') + '<br>' +
+      'Status: ' + p.status + ' (' + (p.confirmed ? 'confirmed, 2+ sources' : 'unconfirmed, single source') + ')'
+    );
+  });
+}).catch(function () {});
+</script>
+</body>
+</html>

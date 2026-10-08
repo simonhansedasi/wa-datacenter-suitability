@@ -173,6 +173,7 @@
   <div class="nav-links">
     <a href="/{{ state_lower }}/study/">&larr; {{ state_name }} ZCTA study</a>
     <a href="/{{ state_lower }}/">&larr; {{ state_name }} state atlas</a>
+    <a href="/{{ state_lower }}/study/{{ region }}/survey/" style="color:var(--accent);font-family:monospace;font-size:0.8rem;">&#9654; Take the community survey</a>
   </div>
 </header>
 
@@ -251,7 +252,7 @@
         <span class="presets-label">Presets</span>
         <button class="preset-btn" id="btn-developer" onclick="applyPreset('developer')">Developer</button>
         <button class="preset-btn" id="btn-agency"    onclick="applyPreset('agency')">Agency / EJ</button>
-        <button class="preset-btn active" id="btn-balanced" onclick="applyPreset('balanced')">Balanced</button>
+        <button class="preset-btn active" id="btn-community" onclick="applyPreset('community')">Community</button>
       </div>
 
       <div class="controls-title">Indicator weights &mdash; drag to adjust, auto-normalize to 100%</div>
@@ -479,17 +480,42 @@ function computeComposite(p, w) {
 const PRESETS = {
   developer: { tx:25, water:5,  ej:15, seismic:5,  flood:5,  contam:5, waterway:0, geo:0, flat:35, pop:5  },
   agency:    { tx:5,  water:5,  ej:60, seismic:15, flood:10, contam:5, waterway:0, geo:0, flat:0,  pop:0  },
-  balanced:  { tx:20, water:10, ej:35, seismic:5,  flood:5,  contam:5, waterway:0, geo:0, flat:15, pop:5  },
 };
 
-function applyPreset(name) {
-  const p = PRESETS[name];
-  SLIDER_IDS.forEach(id => {
-    document.getElementById('w-' + id).value = p[id] || 0;
-  });
-  ['developer','agency','balanced'].forEach(n => {
+// survey key → case_study slider ID (aquifer/soil have no slider here, dropped)
+const COMMUNITY_MAP = {
+  tx:'tx', water:'water', ej:'ej', seismic:'seismic', flood:'flood',
+  contam:'contam', waterway:'waterway', geo:'geo', flat:'flat', pop:'pop'
+};
+
+async function applyPreset(name) {
+  ['developer','agency','community'].forEach(n => {
     document.getElementById('btn-' + n).classList.toggle('active', n === name);
   });
+  if (name === 'community') {
+    try {
+      const resp = await fetch('/{{ state_lower }}/study/{{ region }}/community_weights');
+      const data = await resp.json();
+      const cw = data.weights;
+      // use only the 10 sliders available here; renormalize
+      const mapped_keys = Object.keys(COMMUNITY_MAP);
+      const total = mapped_keys.reduce((s, k) => s + (cw[k] || 0), 0) || 1;
+      SLIDER_IDS.forEach(id => { document.getElementById('w-' + id).value = 0; });
+      mapped_keys.forEach(k => {
+        const sid = COMMUNITY_MAP[k];
+        document.getElementById('w-' + sid).value = Math.round((cw[k] / total) * 100);
+      });
+    } catch(e) {
+      // fallback: equal weights
+      const eq = Math.round(100 / SLIDER_IDS.length);
+      SLIDER_IDS.forEach(id => { document.getElementById('w-' + id).value = eq; });
+    }
+  } else {
+    const p = PRESETS[name];
+    SLIDER_IDS.forEach(id => {
+      document.getElementById('w-' + id).value = p[id] || 0;
+    });
+  }
   updateMap();
 }
 
@@ -648,7 +674,7 @@ function toggleTable(tableId, btn) {
 // ── Slider listeners ─────────────────────────────────────────────────
 SLIDER_IDS.forEach(id => {
   document.getElementById('w-' + id).addEventListener('input', () => {
-    ['developer','agency','balanced'].forEach(n => {
+    ['developer','agency','community'].forEach(n => {
       document.getElementById('btn-' + n).classList.remove('active');
     });
     updateMap();

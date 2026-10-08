@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ region_name }} Parcel Siting Study</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --surface: #1a1a2e;
+    --border: #2e2e4a;
+    --text: #e0e0f0;
+    --muted: #8888aa;
+    --accent: #5b8dee;
+    --green: #4caf82;
+    --red: #e05c5c;
+    --yellow: #e0c060;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Georgia', serif; line-height: 1.7; }
+  a { color: var(--accent); }
+  a:hover { text-decoration: underline; }
+
+  header {
+    max-width: 900px; margin: 0 auto; padding: 52px 24px 36px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-meta {
+    display: flex; align-items: baseline; gap: 16px; margin-bottom: 14px; flex-wrap: wrap;
+  }
+  header h1 { font-size: 1.8rem; line-height: 1.25; }
+  header .byline { color: var(--muted); font-size: 0.85rem; font-family: monospace; }
+  header .lede {
+    margin-top: 16px; font-size: 1rem; color: #c0c0d8;
+    border-left: 3px solid var(--accent); padding-left: 16px;
+  }
+  .nav-links { margin-top: 14px; font-family: monospace; font-size: 0.8rem; }
+  .nav-links a { color: var(--muted); margin-right: 20px; }
+  .nav-links a:hover { color: var(--text); }
+
+  .section { max-width: 900px; margin: 0 auto; padding: 40px 24px; border-bottom: 1px solid var(--border); }
+  h2 { font-size: 1.25rem; margin-bottom: 10px; color: #d0d0ee; }
+  h3 { font-size: 1.05rem; margin-bottom: 8px; color: #c0c0e0; }
+  p { margin-bottom: 12px; color: #c8c8e0; }
+
+  /* ── gate summary ── */
+  .gate-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+  .gate-chip {
+    font-family: monospace; font-size: 0.82rem; padding: 5px 14px;
+    border-radius: 20px; border: 1px solid var(--border); background: var(--surface);
+    color: var(--muted);
+  }
+  .gate-chip.ok  { border-color: var(--green); color: var(--green); }
+  .gate-chip.info { border-color: var(--accent); color: var(--accent); }
+
+  /* ── score ranges table ── */
+  .tag {
+    display: inline-block; font-family: monospace; font-size: 0.72rem;
+    padding: 2px 9px; border-radius: 10px; font-weight: normal;
+  }
+  .tag-uniform { background: #2a2a3a; color: var(--muted); }
+  .tag-mod     { background: #2e2814; color: var(--yellow); }
+  .tag-key     { background: #122a1a; color: var(--green); }
+
+  /* ── map ── */
+  .map-wrapper { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-top: 16px; position: relative; }
+  #map { height: 620px; background: var(--surface); }
+  #map-loading {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15,15,26,0.82); display: flex; align-items: center; justify-content: center;
+    font-family: monospace; font-size: 0.88rem; color: var(--muted); z-index: 1000;
+  }
+
+  .controls {
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 18px 20px;
+  }
+  .controls-title {
+    font-family: monospace; font-size: 0.8rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px;
+  }
+
+  /* presets */
+  .presets-row {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border);
+  }
+  .presets-label {
+    font-family: monospace; font-size: 0.78rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.06em; margin-right: 4px;
+  }
+  .preset-btn {
+    font-family: monospace; font-size: 0.8rem; cursor: pointer;
+    background: var(--bg); color: var(--muted); border: 1px solid var(--border);
+    border-radius: 4px; padding: 5px 16px;
+  }
+  .preset-btn:hover { color: var(--text); border-color: #4a4a7a; }
+  .preset-btn.active { border-color: var(--accent); color: var(--accent); }
+
+  .slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .slider-label {
+    font-family: monospace; font-size: 0.82rem; color: var(--text);
+    width: 260px; flex-shrink: 0;
+  }
+  .slider-label span { color: var(--muted); font-size: 0.75rem; }
+  .slider-group-hdr {
+    font-family: monospace; font-size: 0.72rem; font-weight: bold;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;
+    margin: 12px 0 6px; padding-bottom: 3px; border-bottom: 1px solid var(--border);
+  }
+  .slider-group-hdr span { font-weight: normal; text-transform: none; letter-spacing: 0; }
+  input[type=range] { flex: 1; accent-color: var(--accent); cursor: pointer; }
+  .pct {
+    font-family: monospace; font-size: 0.82rem; color: var(--accent);
+    width: 42px; text-align: right; flex-shrink: 0;
+  }
+
+  /* filter rows */
+  .filter-row {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border);
+  }
+  .filter-label {
+    font-family: monospace; font-size: 0.78rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.06em; width: 100px; flex-shrink: 0;
+  }
+  .filter-btn {
+    font-family: monospace; font-size: 0.78rem; cursor: pointer;
+    background: var(--bg); color: var(--muted); border: 1px solid var(--border);
+    border-radius: 4px; padding: 4px 14px;
+  }
+  .filter-btn:hover { color: var(--text); border-color: #4a4a7a; }
+  .filter-btn.active { border-color: var(--yellow); color: var(--yellow); }
+
+  .map-note { font-size: 0.78rem; color: var(--muted); margin-top: 10px; font-family: monospace; }
+
+  /* ── rankings ── */
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.84rem; }
+  th { background: var(--surface); color: var(--muted); font-family: monospace;
+       font-weight: normal; text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--border); color: #c8c8e0; }
+  tr:last-child td { border-bottom: none; }
+  .score-cell { font-family: monospace; font-weight: bold; }
+  .score-hi  { color: var(--green); }
+  .score-lo  { color: var(--red); }
+  .score-mid { color: var(--yellow); }
+  .detail-col { display: none; }
+  .table-expanded .detail-col { display: table-cell; }
+  .expand-btn {
+    font-size: 0.76rem; font-family: monospace; cursor: pointer;
+    background: var(--surface); color: var(--muted); border: 1px solid var(--border);
+    border-radius: 4px; padding: 3px 10px; margin-bottom: 6px;
+  }
+  .expand-btn:hover { color: #c8c8e0; }
+
+  /* ── callouts ── */
+  .callout {
+    border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface); padding: 20px 24px; margin-top: 0;
+  }
+  .callout.finding { border-left: 4px solid var(--accent); }
+  .callout.policy  { border-left: 4px solid var(--yellow); }
+  .callout.seismic { border-left: 4px solid var(--red); }
+  .callout-label {
+    font-family: monospace; font-size: 0.75rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;
+  }
+  .callout p { margin-bottom: 0; font-size: 0.92rem; color: #c0c0d8; }
+
+  /* ── tooltip ── */
+  .leaflet-tooltip.cs-tip {
+    background: #1a1a2e; border: 1px solid #2e2e4a; color: #e0e0f0;
+    font-family: monospace; font-size: 0.78rem; line-height: 1.7;
+    padding: 8px 12px; border-radius: 4px; box-shadow: none; pointer-events: none;
+  }
+  .leaflet-tooltip.cs-tip::before { display: none; }
+
+  footer { max-width: 900px; margin: 0 auto; padding: 32px 24px 64px; }
+  footer p { font-size: 0.8rem; color: var(--muted); font-family: monospace; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-meta">
+    <h1>{{ region_name }} Data Center Parcel Study</h1>
+    <span class="byline">Edasi M&otilde;tlev LLC &nbsp;/&nbsp; {{ state_name }} &nbsp;/&nbsp; 2026</span>
+  </div>
+  <p class="lede">
+    Parcel-level siting analysis across {{ region_name }}.
+    {{ "{:,}".format(total_parcel_count) }} non-residential, non-exempt parcels &ge;5 acres
+    scored on seven dimensions: four inherited from the ZCTA-level study (water, community burden,
+    seismic, flood) and three computed at individual parcel resolution (grid access, parcel size,
+    development status). All viable parcels shown; adjust weights and filters to focus the map.
+  </p>
+  <div class="nav-links">
+    <a href="/{{ state_lower }}/study/">&larr; {{ state_name }} ZCTA study</a>
+    <a href="/{{ state_lower }}/">&larr; {{ state_name }} state atlas</a>
+    <a href="/{{ state_lower }}/study/{{ region }}/survey/" style="color:var(--accent);font-family:monospace;font-size:0.8rem;">&#9654; Take the community survey</a>
+  </div>
+</header>
+
+<!-- ── GATE SUMMARY ──────────────────────────────────────────────────── -->
+<div class="section" style="padding-top:28px;padding-bottom:28px;">
+  <div class="gate-bar">
+    <div class="gate-chip ok">{{ "{:,}".format(total_parcel_count) }} viable parcels</div>
+    <div class="gate-chip info">all shown on map</div>
+    {% for d in dor_breakdown %}
+    <div class="gate-chip">DOR {{ d.code }}: {{ d.count }} ({{ d.label }})</div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ── SCORE RANGES ───────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Score Distribution &mdash; Visible Parcels</h2>
+  <p style="font-size:0.88rem;color:var(--muted);">
+    Spread (max &minus; min) quantifies how much each dimension differentiates parcels.
+    Water, community burden, seismic, and flood scores are inherited from the ZCTA-level
+    study. Grid access, parcel size, and development status are computed at individual parcel resolution.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Dimension</th>
+        <th>Min</th>
+        <th>Mean</th>
+        <th>Max</th>
+        <th>Spread</th>
+        <th>Differentiation</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ind in score_ranges %}
+      <tr>
+        <td>{{ ind.label }}</td>
+        <td style="font-family:monospace;">{{ ind.min }}</td>
+        <td style="font-family:monospace;">{{ ind.mean }}</td>
+        <td style="font-family:monospace;">{{ ind.max }}</td>
+        <td style="font-family:monospace;">{{ ind.spread }}</td>
+        <td>
+          {% if ind.spread < 0.05 %}
+            <span class="tag tag-uniform">uniform</span>
+          {% elif ind.spread > 0.20 %}
+            <span class="tag tag-key">key differentiator</span>
+          {% else %}
+            <span class="tag tag-mod">moderate</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- ── MAP ───────────────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Parcel Suitability Explorer</h2>
+  <p style="font-size:0.88rem;color:var(--muted);">
+    Hover any parcel for scores. Adjust dimension weights to reflect your priorities.
+    Use land use and acreage filters to focus the analysis.
+  </p>
+  <div class="map-wrapper">
+    <div id="map"></div>
+    <div id="map-loading">Loading {{ "{:,}".format(total_parcel_count) }} parcels&hellip;</div>
+    <div class="controls">
+
+      <div class="presets-row">
+        <span class="presets-label">Presets</span>
+        <button class="preset-btn" id="btn-developer" onclick="applyPreset('developer')">Developer</button>
+        <button class="preset-btn" id="btn-agency"    onclick="applyPreset('agency')">Agency / EJ</button>
+        <button class="preset-btn active" id="btn-community" onclick="applyPreset('community')">Community</button>
+      </div>
+
+      <div class="controls-title">Dimension weights &mdash; drag to adjust, auto-normalize to 100%</div>
+
+      <div class="slider-group-hdr">Inherited context <span>(ZCTA-level)</span></div>
+      <div class="slider-row">
+        <div class="slider-label">Water availability <span>(precipitation + surface water)</span></div>
+        <input type="range" id="w-water" min="0" max="100" value="10">
+        <div class="pct" id="pct-water">10%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Community burden <span>(EJ / poverty / minority share)</span></div>
+        <input type="range" id="w-ej" min="0" max="100" value="10">
+        <div class="pct" id="pct-ej">10%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Seismic safety <span>(inverse PGAM)</span></div>
+        <input type="range" id="w-seismic" min="0" max="100" value="10">
+        <div class="pct" id="pct-seismic">10%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Flood safety <span>(inverse SFHA fraction)</span></div>
+        <input type="range" id="w-flood" min="0" max="100" value="10">
+        <div class="pct" id="pct-flood">10%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Aquifer depth <span>(depth-to-water table, USGS NWIS)</span></div>
+        <input type="range" id="w-aquifer" min="0" max="100" value="10">
+        <div class="pct" id="pct-aquifer">10%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Soil drainage <span>(SSURGO hydro group; D=low perm=low risk)</span></div>
+        <input type="range" id="w-soil" min="0" max="100" value="10">
+        <div class="pct" id="pct-soil">10%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Terrain slope <span>(SRTM; flat fraction)</span></div>
+        <input type="range" id="w-slope" min="0" max="100" value="10">
+        <div class="pct" id="pct-slope">10%</div>
+      </div>
+
+      <div class="slider-group-hdr">Parcel characteristics</div>
+      <div class="slider-row">
+        <div class="slider-label">Grid access <span>(parcel-level tx proximity)</span></div>
+        <input type="range" id="w-tx" min="0" max="100" value="10">
+        <div class="pct" id="pct-tx">10%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Parcel size <span>(log-normalized acreage)</span></div>
+        <input type="range" id="w-acreage" min="0" max="100" value="10">
+        <div class="pct" id="pct-acreage">10%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Development status <span>(undeveloped fraction)</span></div>
+        <input type="range" id="w-vacant" min="0" max="100" value="10">
+        <div class="pct" id="pct-vacant">10%</div>
+      </div>
+
+      <div class="filter-row">
+        <span class="filter-label">Land use</span>
+        <button class="filter-btn active" id="dor-all"  onclick="setDorFilter('all')">All types</button>
+        <button class="filter-btn" id="dor-91"   onclick="setDorFilter('91')">Undeveloped (DOR 91)</button>
+        <button class="filter-btn" id="dor-ag"   onclick="setDorFilter('ag')">Agricultural (DOR 81/83)</button>
+      </div>
+
+      <div class="filter-row">
+        <span class="filter-label">Min acres</span>
+        <button class="filter-btn active" id="ac-0"   onclick="setAcreFilter(0)">5+ ac</button>
+        <button class="filter-btn" id="ac-20"   onclick="setAcreFilter(20)">20+ ac</button>
+        <button class="filter-btn" id="ac-100"  onclick="setAcreFilter(100)">100+ ac</button>
+        <button class="filter-btn" id="ac-500"  onclick="setAcreFilter(500)">500+ ac</button>
+      </div>
+
+      <div class="map-note">
+        Score 0&ndash;1 &nbsp;&bull;&nbsp; green = more suitable &nbsp;&bull;&nbsp; red = less suitable
+        &nbsp;&bull;&nbsp; white diamond = existing data center &nbsp;&bull;&nbsp; outline diamond = proposed
+        &nbsp;&bull;&nbsp; {{ "{:,}".format(total_parcel_count) }} parcels shown
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── RANKINGS ──────────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Top Parcels by Current Weights</h2>
+  <p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;">
+    Updates live with sliders and filters. Click any row to pan the map.
+  </p>
+  <button class="expand-btn" onclick="toggleTable('top-table', this)">+ show dimension scores</button>
+  <table id="top-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>ZCTA</th>
+        <th>Parcel</th>
+        <th>Owner</th>
+        <th>City</th>
+        <th>Acres</th>
+        <th>DOR</th>
+        <th>TX km</th>
+        <th class="detail-col">Water</th>
+        <th class="detail-col">EJ</th>
+        <th class="detail-col">Seismic</th>
+        <th class="detail-col">Flood</th>
+        <th class="detail-col">Aquifer</th>
+        <th class="detail-col">Soil</th>
+        <th class="detail-col">Slope</th>
+        <th class="detail-col">Grid</th>
+        <th class="detail-col">Size</th>
+        <th class="detail-col">Vacant</th>
+        <th>Composite</th>
+      </tr>
+    </thead>
+    <tbody id="top-tbody">
+      <tr><td colspan="19" style="color:var(--muted);font-family:monospace;font-size:0.82rem;">Loading&hellip;</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── KEY FINDING ──────────────────────────────────────────────────── -->
+{% if context_note %}
+<div class="section">
+  <div class="callout finding">
+    <div class="callout-label">Key finding &mdash; the Quincy paradox</div>
+    <p>{{ context_note }}</p>
+  </div>
+</div>
+{% endif %}
+
+{% if policy_note %}
+<!-- ── POLICY CALLOUT ──────────────────────────────────────────────── -->
+<div class="section">
+  <div class="callout policy">
+    <div class="callout-label">Grid and water context &mdash; {{ region_name }}</div>
+    <p>{{ policy_note }}</p>
+  </div>
+</div>
+{% endif %}
+
+{% if seismic_note %}
+<!-- ── SEISMIC CALLOUT ─────────────────────────────────────────────── -->
+<div class="section">
+  <div class="callout seismic">
+    <div class="callout-label">Seismic context &mdash; {{ region_name }}</div>
+    <p>{{ seismic_note }}</p>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── FOOTER ────────────────────────────────────────────────────────── -->
+<footer>
+  <p>
+    &copy; 2026 Simon-Hans Edasi / Edasi M&otilde;tlev LLC &nbsp;&bull;&nbsp;
+    Parcel data: Grant County Assessor via ArcGIS Open Data (public domain) &nbsp;&bull;&nbsp;
+    ZCTA scores: Census 2020, ACS 2022, OSM (ODbL), USGS, FEMA, EPA TRI &nbsp;&bull;&nbsp;
+    <a href="mailto:simonhansedasi@gmail.com">Contact</a>
+  </p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const GEOJSON_URL = '{{ geojson_url }}';
+const STATE       = '{{ state_lower }}';
+const MAP_CENTER  = {{ map_center | tojson }};
+const MAP_ZOOM    = {{ map_zoom }};
+
+let allFeatures  = [];
+let parcelLayers = {};
+let gridLayer    = null;
+let hoverTooltip = null;
+let dorFilter    = 'all';
+let acreFilter   = 0;
+
+const map = L.map('map', {
+  center: MAP_CENTER, zoom: MAP_ZOOM,
+  zoomControl: true, attributionControl: false,
+  preferCanvas: true,
+});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 16 }).addTo(map);
+const canvasRenderer = L.canvas({ padding: 0.5 });
+
+// ── Color scale ───────────────────────────────────────────────────────
+function scoreColor(s) {
+  s = Math.max(0, Math.min(1, s));
+  let r, g, b;
+  if (s < 0.5) {
+    const t = s * 2;
+    r = Math.round(215 + (252 - 215) * t);
+    g = Math.round(48  + (215 - 48)  * t);
+    b = Math.round(39  + (148 - 39)  * t);
+  } else {
+    const t = (s - 0.5) * 2;
+    r = Math.round(252 + (26  - 252) * t);
+    g = Math.round(215 + (152 - 215) * t);
+    b = Math.round(148 + (80  - 148) * t);
+  }
+  return `rgb(${r},${g},${b})`;
+}
+function cellStyle(score) {
+  return { fillColor: scoreColor(score), fillOpacity: 0.75, color: '#1a1a2e', weight: 0.5 };
+}
+function scoreClass(s) {
+  return s >= 0.70 ? 'score-hi' : s >= 0.55 ? 'score-mid' : 'score-lo';
+}
+
+// ── Weights ───────────────────────────────────────────────────────────
+const SLIDER_IDS = ['water', 'ej', 'seismic', 'flood', 'aquifer', 'soil', 'slope', 'tx', 'acreage', 'vacant'];
+
+function getWeights() {
+  const raw   = SLIDER_IDS.map(id => parseFloat(document.getElementById('w-' + id).value));
+  const total = raw.reduce((a, b) => a + b, 0) || 1;
+  const pcts  = raw.map(v => v / total);
+  SLIDER_IDS.forEach((id, i) => {
+    document.getElementById('pct-' + id).textContent = Math.round(pcts[i] * 100) + '%';
+  });
+  return pcts;
+}
+
+function computeComposite(p, w) {
+  return w[0] * (p.water_score   || 0)
+       + w[1] * (p.ej_score      || 0)
+       + w[2] * (p.seismic_score || 0)
+       + w[3] * (p.flood_score   || 0)
+       + w[4] * (p.aquifer_score || 0)
+       + w[5] * (p.soil_score    || 0)
+       + w[6] * (p.slope_score   || 0)
+       + w[7] * (p.tx_score      || 0)
+       + w[8] * (p.acreage_score || 0)
+       + w[9] * (p.vacant_score  || 0);
+}
+
+// ── Presets ───────────────────────────────────────────────────────────
+const PRESETS = {
+  developer: { water:5,  ej:5,  seismic:5,  flood:5,  aquifer:5,  soil:5,  slope:5,  tx:30, acreage:20, vacant:15 },
+  agency:    { water:15, ej:25, seismic:8,  flood:12, aquifer:10, soil:8,  slope:5,  tx:8,  acreage:5,  vacant:4  },
+};
+
+// ZCTA-level indicator keys from survey → parcel slider IDs
+const COMMUNITY_MAP = {
+  water:'water', ej:'ej', seismic:'seismic', flood:'flood',
+  aquifer:'aquifer', soil:'soil', flat:'slope'
+};
+
+async function applyPreset(name) {
+  ['developer','agency','community'].forEach(n => {
+    document.getElementById('btn-' + n).classList.toggle('active', n === name);
+  });
+  if (name === 'community') {
+    try {
+      const resp = await fetch('/{{ state_lower }}/study/{{ region }}/community_weights');
+      const data = await resp.json();
+      const cw = data.weights;
+      // extract and scale the 7 ZCTA-relevant weights to sum to 70
+      const zcta_keys = Object.keys(COMMUNITY_MAP);
+      const zcta_total = zcta_keys.reduce((s, k) => s + (cw[k] || 0), 0) || 1;
+      SLIDER_IDS.forEach(id => { document.getElementById('w-' + id).value = 0; });
+      zcta_keys.forEach(k => {
+        const sid = COMMUNITY_MAP[k];
+        document.getElementById('w-' + sid).value = Math.round((cw[k] / zcta_total) * 70);
+      });
+      document.getElementById('w-tx').value      = 10;
+      document.getElementById('w-acreage').value = 10;
+      document.getElementById('w-vacant').value  = 10;
+    } catch(e) {
+      // fallback to balanced if fetch fails
+      SLIDER_IDS.forEach(id => { document.getElementById('w-' + id).value = 10; });
+    }
+  } else {
+    const p = PRESETS[name];
+    SLIDER_IDS.forEach(id => {
+      document.getElementById('w-' + id).value = p[id] || 0;
+    });
+  }
+  updateStyles();
+}
+
+// ── Filters ───────────────────────────────────────────────────────────
+function setDorFilter(val) {
+  dorFilter = val;
+  ['all','91','ag'].forEach(v => {
+    document.getElementById('dor-' + v).classList.toggle('active', v === val);
+  });
+  rebuildLayer();
+}
+
+function setAcreFilter(val) {
+  acreFilter = val;
+  [0, 20, 100, 500].forEach(v => {
+    document.getElementById('ac-' + v).classList.toggle('active', v === val);
+  });
+  rebuildLayer();
+}
+
+function dorCode(p) {
+  return String(p.DepartmentOfRevenueCode || '').trim().split(' ')[0];
+}
+function featureVisible(p) {
+  const code  = dorCode(p);
+  const acres = p.TotalAcres || 0;
+  if (acres < acreFilter) return false;
+  if (dorFilter === '91' && code !== '91') return false;
+  if (dorFilter === 'ag' && code !== '81' && code !== '83') return false;
+  return true;
+}
+
+// ── Tooltip ───────────────────────────────────────────────────────────
+function tipHtml(p, composite) {
+  const fmt  = v => (v != null) ? Number(v).toFixed(3) : '--';
+  const fmt1 = v => (v != null) ? Number(v).toFixed(1) : '--';
+  const owner = (p.LastName || '').trim() || 'Unknown';
+  const city  = (p.IncorporatedCity || '').trim() || 'Unincorporated';
+  const dor   = String(p.DepartmentOfRevenueCode || '').trim().split(' ')[0];
+  const txKm  = p.tx_dist_m != null ? (p.tx_dist_m / 1000).toFixed(1) + ' km' : '--';
+  return `<b style="font-size:0.85rem;">${p.PARCEL}</b><br>
+    <span style="color:#8888aa;">${owner} &middot; ${city}</span><br>
+    ${fmt1(p.TotalAcres)} ac &nbsp;&bull;&nbsp; DOR ${dor} &nbsp;&bull;&nbsp; ZCTA ${p.zcta || '--'}<br>
+    <span style="color:#8888aa;">W:</span>${fmt(p.water_score)}
+    <span style="color:#8888aa;">EJ:</span>${fmt(p.ej_score)}
+    <span style="color:#8888aa;">Sei:</span>${fmt(p.seismic_score)}
+    <span style="color:#8888aa;">Fld:</span>${fmt(p.flood_score)}<br>
+    <span style="color:#8888aa;">Aq:</span>${fmt(p.aquifer_score)}
+    <span style="color:#8888aa;">Soil:</span>${fmt(p.soil_score)}
+    <span style="color:#8888aa;">Slp:</span>${fmt(p.slope_score)}<br>
+    <span style="color:#8888aa;">Grid:</span>${fmt(p.tx_score)}
+    <span style="color:#8888aa;">Size:</span>${fmt(p.acreage_score)}
+    <span style="color:#8888aa;">Vac:</span>${fmt(p.vacant_score)}<br>
+    <span style="color:#8888aa;">TX dist:</span> ${txKm} &nbsp;&bull;&nbsp;
+    <b style="color:${scoreColor(composite || 0)};">composite: ${fmt(composite)}</b>`;
+}
+
+// ── Rebuild layer (on filter change) ─────────────────────────────────
+function rebuildLayer() {
+  if (gridLayer) map.removeLayer(gridLayer);
+  parcelLayers = {};
+  const w = getWeights();
+
+  const visible = allFeatures.filter(ft => featureVisible(ft.properties));
+  gridLayer = L.geoJSON({ type: 'FeatureCollection', features: visible }, {
+    renderer: canvasRenderer,
+    style: feat => cellStyle(computeComposite(feat.properties, w)),
+    onEachFeature: (feat, layer) => {
+      parcelLayers[feat.properties.PARCEL] = layer;
+    }
+  }).addTo(map);
+
+  // Single group-level tooltip — avoids binding 16k tooltip objects to canvas layers
+  if (hoverTooltip) { map.removeLayer(hoverTooltip); hoverTooltip = null; }
+  gridLayer.on('mouseover mousemove', e => {
+    const p    = e.layer.feature.properties;
+    const comp = computeComposite(p, getWeights());
+    if (!hoverTooltip) {
+      hoverTooltip = L.tooltip({ sticky: false, className: 'cs-tip', permanent: false })
+        .setContent(tipHtml(p, comp))
+        .setLatLng(e.latlng)
+        .addTo(map);
+    } else {
+      hoverTooltip.setContent(tipHtml(p, comp)).setLatLng(e.latlng);
+    }
+  });
+  gridLayer.on('mouseout', () => {
+    if (hoverTooltip) { map.removeLayer(hoverTooltip); hoverTooltip = null; }
+  });
+
+  updateRankings(w, visible);
+}
+
+// ── Style-only update (on slider change, no filter change) ────────────
+function updateStyles() {
+  if (!gridLayer) return;
+  const w = getWeights();
+  gridLayer.eachLayer(layer => {
+    const p = layer.feature.properties;
+    layer.setStyle(cellStyle(computeComposite(p, w)));
+  });
+  const visible = allFeatures.filter(ft => featureVisible(ft.properties));
+  updateRankings(w, visible);
+}
+
+// ── Rankings table ────────────────────────────────────────────────────
+function updateRankings(w, visible) {
+  const ranked = visible
+    .map(ft => {
+      const p = ft.properties;
+      return { p, composite: computeComposite(p, w) };
+    })
+    .sort((a, b) => b.composite - a.composite)
+    .slice(0, 10);
+
+  const fmt  = v => (v != null) ? Number(v).toFixed(3) : '&mdash;';
+  const fmt1 = v => (v != null) ? Number(v).toFixed(1) : '&mdash;';
+  const tbody = document.getElementById('top-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = ranked.map((row, i) => {
+    const p = row.p;
+    const owner = (p.LastName || '').trim() || '&mdash;';
+    const city  = (p.IncorporatedCity || '').trim() || 'Uninc.';
+    const dor   = String(p.DepartmentOfRevenueCode || '').trim().split(' ')[0];
+    const txKm  = p.tx_dist_m != null ? (p.tx_dist_m / 1000).toFixed(1) : '&mdash;';
+    return `<tr style="cursor:pointer;" onclick="panToParcel('${p.PARCEL}')">
+      <td style="font-family:monospace;color:var(--muted);">${i + 1}</td>
+      <td style="font-family:monospace;">${p.zcta || '&mdash;'}</td>
+      <td style="font-family:monospace;font-size:0.78rem;">${p.PARCEL || '&mdash;'}</td>
+      <td>${owner}</td>
+      <td>${city}</td>
+      <td style="font-family:monospace;">${fmt1(p.TotalAcres)}</td>
+      <td style="font-family:monospace;">${dor}</td>
+      <td style="font-family:monospace;">${txKm}</td>
+      <td class="score-cell ${scoreClass(p.water_score||0)} detail-col">${fmt(p.water_score)}</td>
+      <td class="score-cell ${scoreClass(p.ej_score||0)} detail-col">${fmt(p.ej_score)}</td>
+      <td class="score-cell ${scoreClass(p.seismic_score||0)} detail-col">${fmt(p.seismic_score)}</td>
+      <td class="score-cell ${scoreClass(p.flood_score||0)} detail-col">${fmt(p.flood_score)}</td>
+      <td class="score-cell ${scoreClass(p.aquifer_score||0)} detail-col">${fmt(p.aquifer_score)}</td>
+      <td class="score-cell ${scoreClass(p.soil_score||0)} detail-col">${fmt(p.soil_score)}</td>
+      <td class="score-cell ${scoreClass(p.slope_score||0)} detail-col">${fmt(p.slope_score)}</td>
+      <td class="score-cell ${scoreClass(p.tx_score||0)} detail-col">${fmt(p.tx_score)}</td>
+      <td class="score-cell ${scoreClass(p.acreage_score||0)} detail-col">${fmt(p.acreage_score)}</td>
+      <td class="score-cell ${scoreClass(p.vacant_score||0)} detail-col">${fmt(p.vacant_score)}</td>
+      <td class="score-cell ${scoreClass(row.composite)}">${row.composite.toFixed(3)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function panToParcel(parcelId) {
+  const layer = parcelLayers[parcelId];
+  if (layer) map.fitBounds(layer.getBounds(), { maxZoom: 14, padding: [40, 40] });
+}
+
+// ── Load GeoJSON ──────────────────────────────────────────────────────
+fetch(GEOJSON_URL)
+  .then(r => r.json())
+  .then(data => {
+    allFeatures = data.features || [];
+    rebuildLayer();
+    if (gridLayer) map.fitBounds(gridLayer.getBounds(), { padding: [20, 20] });
+    const overlay = document.getElementById('map-loading');
+    if (overlay) overlay.style.display = 'none';
+  });
+
+// ── Transmission lines ────────────────────────────────────────────────
+function txStyle(feat) {
+  const raw = (feat.properties.voltage || '').split(';')[0];
+  const v   = parseInt(raw, 10) || 0;
+  if (v >= 345000) return { color: '#f5c518', weight: 1.8, opacity: 0.75 };
+  if (v >= 230000) return { color: '#7eb8d4', weight: 1.2, opacity: 0.55 };
+  return               { color: '#9aaabb', weight: 1.0, opacity: 0.55 };
+}
+fetch('/' + STATE + '/transmission.geojson')
+  .then(r => r.json())
+  .then(data => L.geoJSON(data, { style: txStyle, interactive: false }).addTo(map))
+  .catch(() => {});
+
+// ── Data center markers ───────────────────────────────────────────────
+function dcIcon(source) {
+  const fill   = source === 'proposed' ? 'rgba(255,180,50,0.15)' : 'white';
+  const border = source === 'proposed' ? '2px dashed #f5c518' : '1.5px solid #333';
+  return L.divIcon({
+    html: `<div style="width:12px;height:12px;background:${fill};border:${border};transform:rotate(45deg);margin:-5px"></div>`,
+    className: '', iconAnchor: [6, 6]
+  });
+}
+fetch('/' + STATE + '/datacenters.geojson')
+  .then(r => r.json())
+  .then(data => {
+    L.geoJSON(data, {
+      pointToLayer: (feat, latlng) => L.marker(latlng, { icon: dcIcon(feat.properties.source) }),
+      onEachFeature: (feat, layer) => {
+        layer.bindTooltip(
+          `<b>${feat.properties.name}</b><br>${feat.properties.operator}`,
+          { className: 'cs-tip' }
+        );
+      }
+    }).addTo(map);
+  })
+  .catch(() => {});
+
+// ── Legend ────────────────────────────────────────────────────────────
+const legend = L.control({ position: 'topright' });
+legend.onAdd = () => {
+  const el = L.DomUtil.create('div');
+  el.innerHTML = `
+    <div style="background:#1a1a2e;border:1px solid #2e2e4a;padding:10px 14px;font-family:monospace;font-size:0.75rem;color:#c8c8e0;line-height:1.9;">
+      <div style="color:#8888aa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Transmission</div>
+      <div><span style="display:inline-block;width:28px;height:3px;background:#f5c518;vertical-align:middle;margin-right:8px;"></span>345+ kV</div>
+      <div><span style="display:inline-block;width:28px;height:2px;background:#7eb8d4;vertical-align:middle;margin-right:8px;"></span>230 kV</div>
+      <div><span style="display:inline-block;width:28px;height:2px;background:#9aaabb;vertical-align:middle;margin-right:8px;"></span>115 kV</div>
+    </div>`;
+  return el;
+};
+legend.addTo(map);
+
+// ── Table expand/collapse ─────────────────────────────────────────────
+function toggleTable(tableId, btn) {
+  const tbl      = document.getElementById(tableId);
+  const expanded = tbl.classList.toggle('table-expanded');
+  btn.textContent = expanded ? '- hide dimension scores' : '+ show dimension scores';
+}
+
+// ── Slider listeners ─────────────────────────────────────────────────
+SLIDER_IDS.forEach(id => {
+  document.getElementById('w-' + id).addEventListener('input', () => {
+    ['developer','agency','community'].forEach(n => {
+      document.getElementById('btn-' + n).classList.remove('active');
+    });
+    updateStyles();
+  });
+});
+</script>
+</body>
+</html>

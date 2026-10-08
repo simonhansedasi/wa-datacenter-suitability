@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community Survey &mdash; {{ region_name }}</title>
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --surface: #1a1a2e;
+    --border: #2e2e4a;
+    --text: #e0e0f0;
+    --muted: #8888aa;
+    --accent: #5b8dee;
+    --green: #4caf82;
+    --red: #e05c5c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Georgia', serif; line-height: 1.7; }
+  a { color: var(--accent); }
+
+  header {
+    max-width: 720px; margin: 0 auto; padding: 52px 24px 36px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-meta { display: flex; align-items: baseline; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+  header h1 { font-size: 1.6rem; line-height: 1.25; }
+  header .byline { color: var(--muted); font-size: 0.85rem; font-family: monospace; }
+  header .lede {
+    margin-top: 16px; font-size: 1rem; color: #c0c0d8;
+    border-left: 3px solid var(--accent); padding-left: 16px;
+  }
+  .nav-links { margin-top: 12px; }
+  .nav-links a { font-family: monospace; font-size: 0.8rem; color: var(--muted); margin-right: 20px; }
+
+  .section { max-width: 720px; margin: 0 auto; padding: 36px 24px; }
+
+  /* ── zip row ── */
+  .zip-row {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 14px 18px; margin-bottom: 28px;
+  }
+  .zip-row label { font-family: monospace; font-size: 0.88rem; color: var(--muted); white-space: nowrap; }
+  .zip-row input {
+    font-family: monospace; font-size: 0.95rem; background: var(--bg);
+    border: 1px solid var(--border); color: var(--text); border-radius: 4px;
+    padding: 6px 10px; width: 100px;
+  }
+  .zip-row input:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+  .zip-note { font-size: 0.8rem; color: var(--muted); font-family: monospace; }
+
+  /* ── indicator rows ── */
+  .indicator-list { display: flex; flex-direction: column; gap: 8px; }
+  .indicator-row {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 10px 14px;
+    transition: border-color 0.15s;
+  }
+  .indicator-row.ranked { border-color: var(--accent); }
+
+  select.rank-select {
+    font-family: monospace; font-size: 0.88rem;
+    background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 5px 8px; width: 58px; flex-shrink: 0; cursor: pointer;
+  }
+  select.rank-select:focus { outline: 1px solid var(--accent); }
+  select.rank-select.has-value { border-color: var(--accent); color: var(--accent); }
+
+  .ind-text { flex: 1; }
+  .ind-label { font-size: 0.9rem; color: var(--text); }
+  .ind-desc { font-size: 0.78rem; color: var(--muted); font-family: monospace; margin-top: 1px; }
+
+  /* ── rank tally ── */
+  .tally {
+    font-family: monospace; font-size: 0.82rem; color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .tally span { color: var(--accent); font-weight: bold; }
+
+  /* ── submit ── */
+  .submit-row { margin-top: 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  button.submit-btn {
+    background: var(--accent); color: #fff; border: none; border-radius: 5px;
+    font-family: monospace; font-size: 0.9rem; padding: 10px 28px; cursor: pointer;
+  }
+  button.submit-btn:disabled { background: #3a3a5a; color: var(--muted); cursor: not-allowed; }
+  button.submit-btn:not(:disabled):hover { background: #4a7ade; }
+
+  #msg {
+    font-family: monospace; font-size: 0.88rem; padding: 8px 14px;
+    border-radius: 4px; display: none;
+  }
+  #msg.ok  { background: #1a2e1a; color: var(--green); border: 1px solid #2e4a2e; }
+  #msg.err { background: #2e1a1a; color: var(--red);   border: 1px solid #4a2e2e; }
+
+  footer { max-width: 720px; margin: 0 auto; padding: 32px 24px 64px; border-top: 1px solid var(--border); }
+  footer p { font-size: 0.78rem; color: var(--muted); font-family: monospace; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-meta">
+    <h1>Community Survey &mdash; {{ region_name }}</h1>
+    <span class="byline">Edasi M&otilde;tlev LLC &nbsp;/&nbsp; {{ state_name }} &nbsp;/&nbsp; 2026</span>
+  </div>
+  <p class="lede">
+    We&rsquo;re studying where data centers could responsibly be built in {{ region_name }}.
+    Tell us what matters most to your community by ranking the factors below in order of importance.
+    Rank as many or as few as you like &mdash; unranked items are treated as less important.
+    One response per location.
+  </p>
+  <div class="nav-links">
+    <a href="/{{ state_lower }}/study/{{ region }}/">&larr; Back to {{ region_name }} study</a>
+  </div>
+</header>
+
+<div class="section">
+
+  <div class="zip-row">
+    <label for="zip-input">Your ZIP code</label>
+    <input type="text" id="zip-input" maxlength="5" placeholder="98848" autocomplete="postal-code">
+    <span class="zip-note">Must be a ZIP code within {{ region_name }}</span>
+  </div>
+
+  <div class="tally">Ranked: <span id="rank-count">0</span> of 12</div>
+
+  <div class="indicator-list" id="indicator-list">
+    {% for key, label, desc in indicators %}
+    <div class="indicator-row" id="row-{{ key }}">
+      <select class="rank-select" id="sel-{{ key }}" data-key="{{ key }}" onchange="onRankChange(this)">
+        <option value="">—</option>
+        {% for i in range(1, 13) %}
+        <option value="{{ i }}">{{ i }}</option>
+        {% endfor %}
+      </select>
+      <div class="ind-text">
+        <div class="ind-label">{{ label }}</div>
+        <div class="ind-desc">{{ desc }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="submit-row">
+    <button class="submit-btn" id="submit-btn" disabled onclick="submitSurvey()">Submit</button>
+    <div id="msg"></div>
+  </div>
+
+</div>
+
+<footer>
+  <p>
+    Responses are anonymous. IP address is stored as a one-way hash; no personal data is collected.
+    Results inform the Community preset in the siting tool and may be included in public briefings.
+  </p>
+</footer>
+
+<script>
+const N = 12;
+const STATE  = '{{ state_lower }}';
+const REGION = '{{ region }}';
+
+// assigned[rank] = key, keyRank[key] = rank
+const assigned = {};
+const keyRank  = {};
+
+function onRankChange(sel) {
+  const key     = sel.dataset.key;
+  const newRank = sel.value ? parseInt(sel.value) : null;
+  const oldRank = keyRank[key] || null;
+
+  // free the old rank
+  if (oldRank !== null) {
+    delete assigned[oldRank];
+    delete keyRank[key];
+  }
+
+  if (newRank !== null) {
+    // if another key owns this rank, kick it back to unselected
+    if (assigned[newRank] !== undefined) {
+      const evictKey = assigned[newRank];
+      delete keyRank[evictKey];
+      delete assigned[newRank];
+      const evictSel = document.getElementById('sel-' + evictKey);
+      evictSel.value = '';
+      evictSel.classList.remove('has-value');
+      document.getElementById('row-' + evictKey).classList.remove('ranked');
+    }
+    assigned[newRank] = key;
+    keyRank[key] = newRank;
+  }
+
+  // update all dropdowns: remove ranks that are taken, restore ranks that are free
+  document.querySelectorAll('select.rank-select').forEach(s => {
+    const thisKey = s.dataset.key;
+    const thisRank = keyRank[thisKey] || null;
+    Array.from(s.options).forEach(opt => {
+      if (!opt.value) return;
+      const r = parseInt(opt.value);
+      // disable if taken by someone else
+      opt.disabled = (assigned[r] !== undefined && assigned[r] !== thisKey);
+    });
+    s.classList.toggle('has-value', thisRank !== null);
+    document.getElementById('row-' + thisKey).classList.toggle('ranked', thisRank !== null);
+  });
+
+  updateTally();
+}
+
+function updateTally() {
+  const count = Object.keys(keyRank).length;
+  document.getElementById('rank-count').textContent = count;
+  const zip = document.getElementById('zip-input').value.trim();
+  document.getElementById('submit-btn').disabled = (count === 0 || zip.length < 5);
+}
+
+document.getElementById('zip-input').addEventListener('input', updateTally);
+
+async function submitSurvey() {
+  const zip = document.getElementById('zip-input').value.trim();
+  const rankings = {};
+  Object.entries(keyRank).forEach(([k, r]) => { rankings[k] = r; });
+
+  const btn = document.getElementById('submit-btn');
+  const msg = document.getElementById('msg');
+  btn.disabled = true;
+  msg.style.display = 'none';
+
+  try {
+    const resp = await fetch('/' + STATE + '/study/' + REGION + '/survey/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ zip_code: zip, rankings })
+    });
+    const data = await resp.json();
+    if (resp.ok) {
+      msg.className = 'ok';
+      msg.textContent = 'Thank you — your response has been recorded.';
+      msg.style.display = 'block';
+      document.getElementById('indicator-list').style.opacity = '0.4';
+      document.getElementById('zip-input').disabled = true;
+    } else {
+      msg.className = 'err';
+      msg.textContent = data.error || 'Submission failed. Please try again.';
+      msg.style.display = 'block';
+      btn.disabled = false;
+    }
+  } catch (e) {
+    msg.className = 'err';
+    msg.textContent = 'Network error. Please try again.';
+    msg.style.display = 'block';
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

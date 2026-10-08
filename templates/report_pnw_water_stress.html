@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Water Stress: Pacific Northwest vs. the Colorado River Compact States</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --surface: #1a1a2e;
+    --border: #2e2e4a;
+    --text: #e0e0f0;
+    --muted: #8888aa;
+    --accent: #5b8dee;
+    --green: #4caf82;
+    --red: #e05c5c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Georgia', serif; line-height: 1.7; }
+  a { color: var(--accent); }
+  a:hover { text-decoration: underline; }
+
+  header { max-width: 860px; margin: 0 auto; padding: 60px 24px 40px; border-bottom: 1px solid var(--border); }
+  header h1 { font-size: 2rem; line-height: 1.25; margin-bottom: 16px; }
+  header .byline { color: var(--muted); font-size: 0.9rem; font-family: monospace; }
+  header .lede { margin-top: 20px; font-size: 1.1rem; color: #c0c0d8; border-left: 3px solid var(--accent); padding-left: 16px; }
+
+  .section { max-width: 860px; margin: 0 auto; padding: 48px 24px; border-bottom: 1px solid var(--border); }
+  h2 { font-size: 1.4rem; margin-bottom: 12px; color: #d0d0ee; }
+  h3 { font-size: 1.1rem; margin: 28px 0 8px; color: #c0c0dd; }
+  p { margin-bottom: 14px; color: #c8c8e0; }
+
+  .map-wrapper { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-top: 20px; }
+  #map { height: 560px; background: var(--surface); }
+  .legend {
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 12px 20px; display: flex; gap: 22px; align-items: center;
+    font-family: monospace; font-size: 0.78rem; color: var(--muted); flex-wrap: wrap;
+  }
+  .legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .map-note { font-size: 0.78rem; color: var(--muted); margin-top: 10px; font-family: monospace; }
+
+  .findings-grid { display: grid; grid-template-columns: 1fr; gap: 28px; margin-top: 24px; }
+  .finding { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 20px; }
+  .finding .number { font-family: monospace; font-size: 2rem; color: var(--border); float: left; margin-right: 10px; line-height: 1; }
+  .finding h3 { margin-top: 0; font-size: 1rem; }
+  .finding p { font-size: 0.9rem; margin-bottom: 0; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.88rem; }
+  th { background: var(--surface); color: var(--muted); font-family: monospace; font-weight: normal; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: #c8c8e0; }
+  tr:last-child td { border-bottom: none; }
+  .num { text-align: right; font-family: monospace; }
+  .score-cell { font-family: monospace; font-weight: bold; }
+  .tag-extreme { color: var(--red); }
+  .tag-high { color: #e0c060; }
+  .tag-low { color: var(--green); }
+  .table-scroll { overflow-x: auto; }
+
+  .caveat { background: var(--surface); border: 1px solid #6b5a1f; border-left: 3px solid #e0c060; border-radius: 6px; padding: 16px 20px; font-size: 0.9rem; }
+
+  .sources { font-size: 0.85rem; }
+  .sources dt { color: var(--text); font-weight: bold; margin-top: 12px; }
+  .sources dd { color: var(--muted); margin-left: 16px; }
+
+  .repro { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; font-size: 0.85rem; font-family: monospace; color: var(--muted); line-height: 1.9; }
+  .repro a { color: var(--accent); }
+
+  footer { max-width: 860px; margin: 0 auto; padding: 32px 24px 64px; }
+  footer p { font-size: 0.8rem; color: var(--muted); font-family: monospace; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Water Stress: Pacific Northwest vs. the Colorado River Compact States</h1>
+  <p class="byline">Simon-Hans Edasi &nbsp;/&nbsp; Merascope</p>
+  <p class="lede">
+    The Colorado River basin's water crisis is real and current -- a new federal plan released
+    July 31, 2026 forces deep cuts on Arizona, California, and Nevada. This page checks what
+    Merascope's water-stress data actually says about Washington and Oregon by comparison, using
+    the real WRI Aqueduct watershed polygons -- not an administrative-boundary proxy.
+  </p>
+</header>
+
+<!-- ── BACKGROUND ───────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Background</h2>
+  <p>
+    On July 31, 2026 the U.S. Bureau of Reclamation released a 10-year plan for managing the
+    Colorado River after the states missed a February deadline to agree on their own terms.
+    Lake Mead and Lake Powell's combined storage hit its lowest point in nearly 70 years --
+    about 12.7 million acre-feet in mid-July -- and the plan requires Arizona, California, and
+    Nevada to cut use 16-20% through 2028
+    (<a href="https://www.cnn.com/2026/07/31/climate/lake-mead-powell-colorado-water-cuts-ca-az-nv">CNN, July 31, 2026</a>).
+  </p>
+  <p>
+    A peer-reviewed national siting study models Northwest water-scarcity footprint as lower
+    than the Southwest's
+    (<a href="https://doi.org/10.1088/1748-9326/abfba1">Estrada et al., <em>Environmental Research Letters</em>, 2021</a>). Columbia Riverkeeper
+    and other advocates argue the Pacific Northwest is not actually water-abundant -- Columbia
+    Basin water rights are already oversubscribed, and the region's hydropower system also has to
+    protect salmon runs
+    (<a href="https://waterfdn.org/data-center-pacific-northwest/">Water Foundation / Columbia Riverkeeper Q&amp;A, 2026</a>).
+  </p>
+</div>
+
+<!-- ── MAP ──────────────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Watershed Water Stress: WA/OR vs. the Compact States</h2>
+  <p>
+    Every WRI Aqueduct watershed polygon under Washington, Oregon, and the seven Colorado River
+    Compact states, on the same color scale. Green is low, red is extremely high. White diamonds
+    are real, tracked data-center sites (solid = confirmed by 2+ independent sources, outline =
+    single-source/unconfirmed). Click any polygon or marker for details.
+  </p>
+  <div class="map-wrapper">
+    <div id="map"></div>
+    <div class="legend">
+      <span><span class="dot" style="background:#4caf82"></span>low water stress</span>
+      <span><span class="dot" style="background:#e0c060"></span>high</span>
+      <span><span class="dot" style="background:#e05c5c"></span>extremely high</span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:white;border:1.5px solid #333;transform:rotate(45deg);margin-right:6px;"></span>data center (confirmed)</span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:transparent;border:2px solid #111;transform:rotate(45deg);margin-right:6px;"></span>data center (unconfirmed)</span>
+    </div>
+  </div>
+  <p class="map-note">Polygons are WRI Aqueduct 3.0 watershed geometry, each state clipped to its own boundary. A watershed straddling a state line appears as two clipped pieces. Data-center sites are tracked in merascope's datacenters.db (scripts/dc_tracker.py) -- "confirmed" means 2+ sources from distinct publishers agree on that site's status, not that Merascope independently verified it on the ground.</p>
+</div>
+
+<!-- ── FINDINGS ─────────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Key Findings</h2>
+  <div class="findings-grid">
+    <div class="finding">
+      <div class="number">1</div>
+      <h3>The gap between the two regions is large</h3>
+      <p>
+        {{ '%.1f'|format(pnw_share) }}% of Washington and Oregon's land area sits in a watershed
+        reading extremely high baseline water stress, versus {{ '%.1f'|format(compact_share) }}%
+        across the seven Colorado River Compact states (AZ, CA, CO, NV, NM, UT, WY). Nationally,
+        {{ '%.1f'|format(national_share) }}% of land area reads extremely high.
+      </p>
+    </div>
+    <div class="finding">
+      <div class="number">2</div>
+      <h3>The extreme-stress watersheds in WA/OR are one cluster, on the state line</h3>
+      <p>
+        Of {{ n_watersheds_pnw }} watershed polygons covering Washington and Oregon, 6 distinct
+        basins read extremely high (bws &ge; 4) -- shown in full below. All 6 sit in one place:
+        straddling the Washington/Oregon line along the Walla Walla Valley and Umatilla Basin.
+        Oregon designated the Walla Walla Basin a "Serious Water Management Problem Area" in 2017
+        after basalt-aquifer levels fell 1-4 feet per year, and Washington Ecology's parallel
+        "Walla Walla 2050" initiative covers the same bi-state basin
+        (<a href="https://ecology.wa.gov/ecologys-work-near-you/river-basins-groundwater/walla-walla-2050">WA Ecology</a>,
+        <a href="https://www.oregon.gov/owrd/programs/gwwl/gw/wallawallasubbasin/pages/default.aspx">Oregon Water Resources Dept</a>).
+      </p>
+    </div>
+    {% set extreme_compact = dc_sites_compact|selectattr('tag', 'equalto', 'extremely high')|list %}
+    <div class="finding">
+      <div class="number">3</div>
+      <h3>Confirmed Compact-state clusters sit on stressed ground more than bare land area would predict -- and split the same way WA/OR does</h3>
+      <p>
+        {{ extreme_compact|length }} of the {{ dc_sites_compact|length }} confirmed Compact-state
+        sites ({{ '%.0f'|format(100.0 * extreme_compact|length / dc_sites_compact|length) }}%) sit
+        in a watershed reading extremely high -- Chandler/Mesa, AZ; all of Denver, CO; Los Lunas,
+        NM; and all of Cheyenne, WY. That's well above the {{ '%.1f'|format(compact_share) }}%
+        area-weighted regional baseline from Finding 1: real clusters land on already-stressed
+        ground more often than random land area would suggest. It isn't universal -- Goodyear, AZ;
+        Silicon Valley, CA; Las Vegas, NV; and both confirmed Utah sites all read low -- and the
+        same in-state split Finding 2 found in the Pacific Northwest shows up again here: Chandler
+        and Mesa read extremely high while Goodyear, in the same Phoenix metro, reads low; the
+        Tahoe-Reno cluster reads high while Las Vegas, same state, reads low.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ── DATA TABLES ──────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>The Data</h2>
+  <h3>The 6 distinct WA/OR watersheds at extremely high baseline water stress ({{ extreme_watersheds|length }} rows -- 2 basins straddle the state line)</h3>
+  <div class="table-scroll">
+  <table>
+    <tr><th>Watershed</th><th>State</th><th class="num">Baseline water stress</th><th class="num">Area (km&sup2;)</th></tr>
+    {% for row in extreme_watersheds %}
+    <tr>
+      <td>{{ row.aq30_id }}</td><td>{{ row.state }}</td>
+      <td class="num score-cell tag-extreme">{{ '%.3f'|format(row.bws) }}</td>
+      <td class="num">{{ '{:,.0f}'.format(row.area_km2) }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  <p class="map-note">A repeated watershed ID across a WA row and an OR row means that basin straddles the state line. {{ '%.1f'|format(floor_share) }}% of all WA/OR land area sits at the literal floor (bws = 0.000).</p>
+
+  <h3>Confirmed WA/OR data-center sites vs. their watershed</h3>
+  <div class="table-scroll">
+  <table>
+    <tr><th>Site</th><th>Operator</th><th>State</th><th>City</th><th>Watershed</th><th class="num">Baseline water stress</th><th>Class</th></tr>
+    {% for row in dc_sites_pnw %}
+    <tr>
+      <td>{{ row.name }}{% if row.status == 'proposed' %} <em style="color:var(--muted)">(proposed)</em>{% elif row.status == 'under_construction' %} <em style="color:var(--muted)">(under construction)</em>{% endif %}</td>
+      <td>{{ row.operator }}</td><td>{{ row.state }}</td><td>{{ row.city }}</td><td>{{ row.watershed_id }}</td>
+      <td class="num score-cell">{{ '%.3f'|format(row.bws) }}</td>
+      <td class="{{ 'tag-extreme' if row.tag == 'extremely high' else ('tag-high' if row.tag == 'high' else 'tag-low') }}">{{ row.tag }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  <p class="map-note">{{ dc_sites_pnw|length }} sites, all confirmed by 2+ independent sources in merascope's datacenters.db (scripts/dc_tracker.py) -- unconfirmed sites are tracked but not shown here.</p>
+
+  <h3>Confirmed Colorado River Compact-state data-center sites vs. their watershed</h3>
+  <div class="table-scroll">
+  <table>
+    <tr><th>Site</th><th>Operator</th><th>State</th><th>City</th><th>Watershed</th><th class="num">Baseline water stress</th><th>Class</th></tr>
+    {% for row in dc_sites_compact %}
+    <tr>
+      <td>{{ row.name }}{% if row.status == 'proposed' %} <em style="color:var(--muted)">(proposed)</em>{% elif row.status == 'under_construction' %} <em style="color:var(--muted)">(under construction)</em>{% endif %}</td>
+      <td>{{ row.operator }}</td><td>{{ row.state }}</td><td>{{ row.city }}</td><td>{{ row.watershed_id }}</td>
+      <td class="num score-cell">{{ '%.3f'|format(row.bws) }}</td>
+      <td class="{{ 'tag-extreme' if row.tag == 'extremely high' else ('tag-high' if row.tag == 'high' else 'tag-low') }}">{{ row.tag }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  <p class="map-note">{{ dc_sites_compact|length }} sites across the 7 Compact states, same confirmation bar as the WA/OR table above -- this is known-major-cluster coverage (one to several anchor sites per state), not an exhaustive inventory.</p>
+
+  <h3>Regional context</h3>
+  <table>
+    <tr><th>Region</th><th class="num">Share of area extremely high</th><th class="num">n watersheds</th></tr>
+    <tr><td>National</td><td class="num">{{ '%.1f'|format(national_share) }}%</td><td class="num">{{ n_watersheds_national }}</td></tr>
+    <tr><td>7 Colorado River Compact states</td><td class="num">{{ '%.1f'|format(compact_share) }}%</td><td class="num">{{ n_watersheds_compact }}</td></tr>
+    <tr><td>Washington + Oregon</td><td class="num">{{ '%.1f'|format(pnw_share) }}%</td><td class="num">{{ n_watersheds_pnw }}</td></tr>
+  </table>
+</div>
+
+<!-- ── EVIDENCE / METHODOLOGY ───────────────────────────────────────── -->
+<div class="section">
+  <h2>Evidence &amp; Methodology</h2>
+  <p>
+    Source: WRI Aqueduct 3.0 baseline water stress (withdrawal-to-supply ratio), read directly
+    from Aqueduct's watershed polygons, each state clipped to its own real boundary. Shares are
+    area-weighted (% of km&sup2;, not polygon count). "Extremely high" is Aqueduct's own
+    threshold: withdrawal-to-supply ratio above 80% (bws &ge; 4 on its 0&ndash;5 scale).
+  </p>
+  <div class="caveat" style="margin-top: 18px;">
+    <strong>What this doesn't measure:</strong> this is local withdrawal-to-supply ratio, not Colorado River allocation risk -- Nevada and Utah both read low on this metric despite heavy Colorado River exposure, because Las Vegas draws ~90% of its water from Lake Mead while sitting in a Great Basin internal-drainage watershed that this metric scores separately. It's a long-run average, not current drought conditions. And it says nothing about water quality, which this map does not attempt to show.
+  </div>
+</div>
+
+<!-- ── REPRODUCIBILITY ──────────────────────────────────────────────── -->
+<div class="section" style="border-bottom: none;">
+  <h2>Reproducibility</h2>
+  <div class="repro">
+    <div>Source: {{ source }}</div>
+    <div>Raw data (JSON): the numbers on this page are a snapshot generated {{ generated_at }}</div>
+    <div>Generated: {{ generated_at }}</div>
+  </div>
+</div>
+
+<footer>
+  <p>Siting the Grid -- a Merascope data finding. Full methodology and pipeline source at <a href="https://merascope.com/#/methodology">merascope.com/#/methodology</a>.</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map = L.map('map', { zoomControl: true, attributionControl: false });
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 14 }).addTo(map);
+
+function stressColor(tag) {
+  if (tag === 'extremely high') return '#e05c5c';
+  if (tag === 'high') return '#e0c060';
+  return '#4caf82';
+}
+
+function watershedLayer(fc) {
+  return L.geoJSON(fc, {
+    style: function (feat) {
+      const c = stressColor(feat.properties.tag);
+      return { fillColor: c, fillOpacity: 0.55, color: c, weight: 1 };
+    },
+    onEachFeature: function (feat, lyr) {
+      const p = feat.properties;
+      lyr.bindPopup(
+        '<strong>Watershed ' + p.aq30_id + '</strong>, ' + p.state + '<br>' +
+        'Baseline water stress: ' + p.bws.toFixed(3) + ' (' + p.tag + ')<br>' +
+        'Area: ' + p.area_km2.toLocaleString() + ' km&sup2;'
+      );
+    }
+  });
+}
+
+Promise.all([
+  fetch('/reports/pnw_watersheds.geojson').then(r => r.json()),
+  fetch('/reports/compact_watersheds.geojson').then(r => r.json()),
+]).then(function (results) {
+  const layers = results.map(watershedLayer);
+  layers.forEach(l => l.addTo(map));
+  map.fitBounds(L.featureGroup(layers).getBounds().pad(0.02));
+}).catch(function () {
+  map.setView([40, -117], 5);
+});
+
+// ── Real, tracked data-center sites (merascope/datacenters.db via
+// dc_tracker.py export-geojson) -- solid diamond = 2+ independent sources
+// agree, outline = single-source/unconfirmed. Never fabricated markers.
+function dcIcon(confirmed) {
+  const fill = confirmed ? 'white' : 'transparent';
+  const border = confirmed ? '1.5px solid #333' : '2px solid #111';
+  return L.divIcon({
+    html: `<div style="width:12px;height:12px;background:${fill};border:${border};transform:rotate(45deg);margin:-5px"></div>`,
+    className: '', iconAnchor: [6, 6]
+  });
+}
+
+fetch('/reports/tracked_datacenters.geojson').then(r => r.json()).then(function (fc) {
+  fc.features.forEach(function (feat) {
+    const p = feat.properties;
+    const [lon, lat] = feat.geometry.coordinates;
+    const marker = L.marker([lat, lon], { icon: dcIcon(p.confirmed) }).addTo(map);
+    marker.bindPopup(
+      '<strong>' + p.name + '</strong><br>' + (p.operator || '') + ', ' + (p.city || '') + ', ' + p.state + '<br>' +
+      'Status: ' + p.status + ' (' + (p.confirmed ? 'confirmed, 2+ sources' : 'unconfirmed, single source') + ')'
+    );
+  });
+}).catch(function () {});
+</script>
+</body>
+</html>

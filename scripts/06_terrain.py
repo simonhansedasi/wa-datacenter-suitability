@@ -213,6 +213,8 @@ def main():
     p95 = grid.loc[buildable, "flat_frac"].quantile(0.95)
     grid["flatness_score"] = 0.0
     grid.loc[buildable, "flatness_score"] = (grid.loc[buildable, "flat_frac"] / p95).clip(0, 1)
+    # slope_score: continuous normalized version, no hard gate zeroing — for use as weighted slider
+    grid["slope_score"] = (grid["flat_frac"] / p95).clip(0, 1)
     print(f"  Gate: {n_gated} cells gated ({n_gated/len(grid):.1%}); p95={p95:.3f}")
 
     grid_out = grid.drop(columns=["flat_frac"], errors="ignore")

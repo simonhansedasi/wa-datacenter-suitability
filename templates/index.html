@@ -190,6 +190,16 @@
         <input type="range" id="w-pop" min="0" max="100" value="0">
         <div class="pct" id="pct-pop">0%</div>
       </div>
+      <div class="slider-row">
+        <div class="slider-label">Aquifer depth <span>(USGS NWIS depth-to-water; deep = lower risk)</span></div>
+        <input type="range" id="w-aquifer" min="0" max="100" value="0">
+        <div class="pct" id="pct-aquifer">0%</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Soil drainage <span>(SSURGO hydrologic group; D = low permeability)</span></div>
+        <input type="range" id="w-soil" min="0" max="100" value="0">
+        <div class="pct" id="pct-soil">0%</div>
+      </div>
 
       <div class="map-note">
         Score 0&ndash;1 &nbsp;&bull;&nbsp; green = more suitable &nbsp;&bull;&nbsp;
@@ -287,7 +297,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr data-tx="0.988" data-water="0.189" data-ej="0.552" data-seismic="0.885" data-flood="1.0" data-contam="0.501" data-waterway="0.068" data-geo="0.319" data-flat="0.769" data-pop="0.885">
+      <tr data-tx="0.988" data-water="0.189" data-ej="0.552" data-seismic="0.885" data-flood="1.0" data-contam="0.501" data-waterway="0.068" data-geo="0.319" data-flat="0.769" data-pop="0.885" data-aquifer="0" data-soil="0">
         <td>Quincy (Grant County)</td>
         <td class="score-cell score-hi detail-col">0.988</td>
         <td class="score-cell score-lo detail-col">0.189</td>
@@ -299,7 +309,7 @@
         <td class="score-cell score-hi detail-col">0.769</td>
         <td class="score-cell score-mid composite-cell">0.563</td>
       </tr>
-      <tr data-tx="0.985" data-water="0.293" data-ej="0.636" data-seismic="0.848" data-flood="1.0" data-contam="0.554" data-waterway="0.244" data-geo="0.318" data-flat="0.479" data-pop="0.733">
+      <tr data-tx="0.985" data-water="0.293" data-ej="0.636" data-seismic="0.848" data-flood="1.0" data-contam="0.554" data-waterway="0.244" data-geo="0.318" data-flat="0.479" data-pop="0.733" data-aquifer="0" data-soil="0">
         <td>Malaga / East Wenatchee</td>
         <td class="score-cell score-hi detail-col">0.985</td>
         <td class="score-cell score-lo detail-col">0.293</td>
@@ -311,7 +321,7 @@
         <td class="score-cell score-mid detail-col">0.479</td>
         <td class="score-cell score-mid composite-cell">0.610</td>
       </tr>
-      <tr data-tx="0.968" data-water="0.743" data-ej="0.544" data-seismic="0.371" data-flood="1.0" data-contam="0.009" data-waterway="0.463" data-geo="0.257" data-flat="0.705" data-pop="0.000">
+      <tr data-tx="0.968" data-water="0.743" data-ej="0.544" data-seismic="0.371" data-flood="1.0" data-contam="0.009" data-waterway="0.463" data-geo="0.257" data-flat="0.705" data-pop="0.000" data-aquifer="0" data-soil="0">
         <td>Seattle downtown</td>
         <td class="score-cell score-hi detail-col">0.968</td>
         <td class="score-cell score-hi detail-col">0.743</td>
@@ -323,7 +333,7 @@
         <td class="score-cell score-hi detail-col">0.705</td>
         <td class="score-cell score-mid composite-cell">0.544</td>
       </tr>
-      <tr data-tx="0.994" data-water="0.739" data-ej="0.109" data-seismic="0.402" data-flood="1.0" data-contam="0.028" data-waterway="0.544" data-geo="0.235" data-flat="0.828" data-pop="0.000">
+      <tr data-tx="0.994" data-water="0.739" data-ej="0.109" data-seismic="0.402" data-flood="1.0" data-contam="0.028" data-waterway="0.544" data-geo="0.235" data-flat="0.828" data-pop="0.000" data-aquifer="0" data-soil="0">
         <td>Tukwila corridor</td>
         <td class="score-cell score-hi detail-col">0.994</td>
         <td class="score-cell score-hi detail-col">0.739</td>
@@ -335,7 +345,7 @@
         <td class="score-cell score-hi detail-col">0.828</td>
         <td class="score-cell score-mid composite-cell">0.506</td>
       </tr>
-      <tr data-tx="0.996" data-water="0.244" data-ej="0.877" data-seismic="1.000" data-flood="1.0" data-contam="0.145" data-waterway="0.116" data-geo="0.461" data-flat="0.564" data-pop="0.527">
+      <tr data-tx="0.996" data-water="0.244" data-ej="0.877" data-seismic="1.000" data-flood="1.0" data-contam="0.145" data-waterway="0.116" data-geo="0.461" data-flat="0.564" data-pop="0.527" data-aquifer="0" data-soil="0">
         <td>Liberty Lake (Spokane)</td>
         <td class="score-cell score-hi detail-col">0.996</td>
         <td class="score-cell score-lo detail-col">0.244</td>
@@ -347,7 +357,7 @@
         <td class="score-cell score-mid detail-col">0.564</td>
         <td class="score-cell score-mid composite-cell">0.605</td>
       </tr>
-      <tr data-tx="0.968" data-water="0.743" data-ej="0.544" data-seismic="0.371" data-flood="1.0" data-contam="0.009" data-waterway="0.463" data-geo="0.257" data-flat="0.705" data-pop="0.000">
+      <tr data-tx="0.968" data-water="0.743" data-ej="0.544" data-seismic="0.371" data-flood="1.0" data-contam="0.009" data-waterway="0.463" data-geo="0.257" data-flat="0.705" data-pop="0.000" data-aquifer="0" data-soil="0">
         <td>Digital Realty (proposed)</td>
         <td class="score-cell score-hi detail-col">0.968</td>
         <td class="score-cell score-hi detail-col">0.743</td>
@@ -359,7 +369,7 @@
         <td class="score-cell score-hi detail-col">0.705</td>
         <td class="score-cell score-mid composite-cell">0.544</td>
       </tr>
-      <tr data-tx="0.987" data-water="0.000" data-ej="0.446" data-seismic="0.916" data-flood="1.0" data-contam="0.014" data-waterway="0.015" data-geo="0.339" data-flat="1.000" data-pop="0.994">
+      <tr data-tx="0.987" data-water="0.000" data-ej="0.446" data-seismic="0.916" data-flood="1.0" data-contam="0.014" data-waterway="0.015" data-geo="0.339" data-flat="1.000" data-pop="0.994" data-aquifer="0" data-soil="0">
         <td>Wallula Gap / Burbank (proposed)</td>
         <td class="score-cell score-hi detail-col">0.987</td>
         <td class="score-cell score-lo detail-col">0.000</td>
@@ -371,7 +381,7 @@
         <td class="score-cell score-hi detail-col">1.000</td>
         <td class="score-cell score-mid composite-cell">0.465</td>
       </tr>
-      <tr data-tx="0.996" data-water="0.000" data-ej="0.737" data-seismic="0.913" data-flood="1.0" data-contam="0.142" data-waterway="0.046" data-geo="0.342" data-flat="1.000" data-pop="0.811">
+      <tr data-tx="0.996" data-water="0.000" data-ej="0.737" data-seismic="0.913" data-flood="1.0" data-contam="0.142" data-waterway="0.046" data-geo="0.342" data-flat="1.000" data-pop="0.811" data-aquifer="0" data-soil="0">
         <td>Richland / Horn Rapids (proposed)</td>
         <td class="score-cell score-hi detail-col">0.996</td>
         <td class="score-cell score-lo detail-col">0.000</td>
@@ -383,7 +393,7 @@
         <td class="score-cell score-hi detail-col">1.000</td>
         <td class="score-cell score-mid composite-cell">0.522</td>
       </tr>
-      <tr data-tx="0.930" data-water="0.000" data-ej="0.737" data-seismic="0.918" data-flood="1.0" data-contam="0.207" data-waterway="0.037" data-geo="0.560" data-flat="0.833" data-pop="0.800">
+      <tr data-tx="0.930" data-water="0.000" data-ej="0.737" data-seismic="0.918" data-flood="1.0" data-contam="0.207" data-waterway="0.037" data-geo="0.560" data-flat="0.833" data-pop="0.800" data-aquifer="0" data-soil="0">
         <td>West Richland / Lewis Clark Ranch (proposed)</td>
         <td class="score-cell score-hi detail-col">0.930</td>
         <td class="score-cell score-lo detail-col">0.000</td>
@@ -414,7 +424,8 @@
       <tr>
         <th>Location</th>
         <th class="detail-col">Grid access</th><th class="detail-col">Water</th><th class="detail-col">Community</th>
-        <th class="detail-col">Seismic</th><th class="detail-col">Geothermal</th><th class="detail-col">Flatness</th><th>Composite</th>
+        <th class="detail-col">Seismic</th><th class="detail-col">Geothermal</th><th class="detail-col">Flatness</th>
+        <th class="detail-col">Aquifer</th><th class="detail-col">Soil</th><th>Composite</th>
       </tr>
     </thead>
     <tbody id="top-sites-tbody">
@@ -778,7 +789,7 @@ let gridLayer = null;
 let gridData  = null;
 
 function getWeights() {
-  const ids = ['tx', 'water', 'ej', 'seismic', 'flood', 'contam', 'waterway', 'geo', 'flat', 'pop'];
+  const ids = ['tx', 'water', 'ej', 'seismic', 'flood', 'contam', 'waterway', 'geo', 'flat', 'pop', 'aquifer', 'soil'];
   const raw = ids.map(id => parseFloat(document.getElementById('w-' + id).value));
   const total = raw.reduce((a, b) => a + b, 0) || 1;
   const pcts  = raw.map(v => v / total);
@@ -812,10 +823,10 @@ function cellCentroid(feature) {
 
 function updateMap() {
   if (!gridLayer) return;
-  const [wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat, wPop] = getWeights();
+  const [wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat, wPop, wAquifer, wSoil] = getWeights();
   recommendLayer.clearLayers();
-  updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat, wPop);
-  updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat, wPop);
+  updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat, wPop, wAquifer, wSoil);
+  updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat, wPop, wAquifer, wSoil);
   gridLayer.eachLayer(layer => {
     const p = layer.feature.properties;
     const flat = p.flatness_score;
@@ -837,7 +848,9 @@ function updateMap() {
                 + wWaterway * (p.waterway_score        || 0)
                 + wGeo      * (p.geothermal_score      || 0)
                 + wFlat     * (flat                    || 0)
-                + wPop      * (p.pop_exposure_score    || 0);
+                + wPop      * (p.pop_exposure_score    || 0)
+                + wAquifer  * (p.aquifer_score         || 0)
+                + wSoil     * (p.soil_score            || 0);
     layer.setStyle(cellStyle(score));
     if (score >= RECOMMEND_THRESHOLD) {
       const ll = cellCentroid(layer.feature);
@@ -870,6 +883,8 @@ fetch('/' + STATE + '/grid_scores.geojson')
         geo:      p.geothermal_score    || 0,
         flat:     p.flatness_score,
         pop:      p.pop_exposure_score  || 0,
+        aquifer:  p.aquifer_score       || 0,
+        soil:     p.soil_score          || 0,
         protected: p.protected_score
       });
     });
@@ -956,7 +971,7 @@ function scoreClass(s) {
   return s >= 0.70 ? 'score-hi' : s >= 0.55 ? 'score-mid' : 'score-lo';
 }
 
-function updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat, wPop) {
+function updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat, wPop, wAquifer, wSoil) {
   document.querySelectorAll('tr[data-tx]').forEach(row => {
     const score = wTx       * parseFloat(row.dataset.tx)
                 + wWater    * parseFloat(row.dataset.water)
@@ -967,7 +982,9 @@ function updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, 
                 + wWaterway * parseFloat(row.dataset.waterway || 0)
                 + wGeo      * parseFloat(row.dataset.geo      || 0)
                 + wFlat     * parseFloat(row.dataset.flat     || 0)
-                + wPop      * parseFloat(row.dataset.pop      || 0);
+                + wPop      * parseFloat(row.dataset.pop      || 0)
+                + wAquifer  * parseFloat(row.dataset.aquifer  || 0)
+                + wSoil     * parseFloat(row.dataset.soil     || 0);
     const cell = row.querySelector('.composite-cell');
     cell.textContent = score.toFixed(3);
     cell.className = `score-cell ${scoreClass(score)} composite-cell`;
@@ -975,7 +992,7 @@ function updateTable(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, 
 }
 
 // ── Top unclaimed sites ───────────────────────────────────────────────
-function updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat, wPop) {
+function updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGeo, wFlat, wPop, wAquifer, wSoil) {
   const tbody = document.getElementById('top-sites-tbody');
   if (!tbody || allCells.length === 0) return;
   const top = allCells
@@ -988,6 +1005,7 @@ function updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGe
       composite: wTx * c.tx + wWater * c.water + wEj * c.ej + wSeis * c.seismic
                + wFlood * c.flood + wContam * c.contam + wWaterway * c.waterway
                + wGeo * c.geo + wFlat * (c.flat || 0) + wPop * (c.pop || 0)
+               + wAquifer * (c.aquifer || 0) + wSoil * (c.soil || 0)
     }))
     .sort((a, b) => b.composite - a.composite)
     .slice(0, 10);
@@ -1003,13 +1021,15 @@ function updateTopSites(wTx, wWater, wEj, wSeis, wFlood, wContam, wWaterway, wGe
       <td class="score-cell ${scoreClass(c.seismic)} detail-col">${c.seismic.toFixed(3)}</td>
       <td class="score-cell ${scoreClass(c.geo)} detail-col">${c.geo.toFixed(3)}</td>
       <td class="score-cell ${scoreClass(c.flat || 0)} detail-col">${c.flat !== undefined ? c.flat.toFixed(3) : '—'}</td>
+      <td class="score-cell ${scoreClass(c.aquifer || 0)} detail-col">${c.aquifer.toFixed(3)}</td>
+      <td class="score-cell ${scoreClass(c.soil || 0)} detail-col">${c.soil.toFixed(3)}</td>
       <td class="score-cell ${scoreClass(c.composite)}">${c.composite.toFixed(3)}</td>
     </tr>
   `).join('');
 }
 
 // ── Slider listeners ─────────────────────────────────────────────────
-['tx', 'water', 'ej', 'seismic', 'flood', 'contam', 'waterway', 'geo', 'flat', 'pop'].forEach(id => {
+['tx', 'water', 'ej', 'seismic', 'flood', 'contam', 'waterway', 'geo', 'flat', 'pop', 'aquifer', 'soil'].forEach(id => {
   document.getElementById('w-' + id).addEventListener('input', updateMap);
 });
 </script>
