@@ -32,9 +32,10 @@ See [PIPELINE_GUIDE.md](PIPELINE_GUIDE.md) for full setup, step descriptions, an
 
 | Tier | Geography | URL pattern | Use case |
 |---|---|---|---|
-| State atlas | 0.15° fishnet (~14 km) | `/wa/` | Public map, press, Steward briefings |
-| ZCTA study | ZIP Code Tabulation Areas | `/wa/study/` | Jurisdiction studies — demographic data native to ZCTA |
+| State atlas | 0.15 degree fishnet (~14 km) | `/wa/` | Public map, press, Steward briefings |
+| ZCTA study | ZIP Code Tabulation Areas | `/wa/study/` | Jurisdiction studies -- demographic data native to ZCTA |
 | City case study | Filtered ZCTA subset | `/wa/study/seattle/` | City-scoped report with policy context |
+| Parcel dossier | Individual land parcels | `/wa/study/grant/` | Site-specific leads for developers |
 
 The fishnet atlas and ZCTA study use identical indicator definitions. The ZCTA advantage is
 methodological: EJ burden and population exposure are native Census ZCTA data, so no spatial
@@ -124,6 +125,28 @@ policy/seismic context. Add a new city by adding an entry to `REGIONS` in `src/a
 - Key within-city differentiators: EJ burden (spread 0.63), terrain flatness (spread 0.76)
 - Near-uniform within city: water availability (spread 0.01), seismic (spread 0.02)
 - Policy context: Seattle moratorium on new data centers >20 MW (April 2026)
+
+## Parcel dossiers
+
+Parcel-level scoring fetches assessor data from county ArcGIS Open Data portals and
+joins it with ZCTA-level scores. Parcels inherit the ZCTA flatness and protection gates
+via centroid spatial join. Scored on four dimensions: zcta_score, tx_score, acreage_score, vacant_score.
+
+Scripts live in `parcels/`. Output: `data/{STATE}/parcels/`.
+
+**Grant County (WA)** — live at `/wa/study/grant/`:
+- 16,054 viable parcels (>=5 ac, non-residential, non-exempt)
+- Key finding: ZCTA 99135 (Wilbur/Almira, composite 0.695) scores above Quincy 98848
+  (0.567) due to lower community burden from existing DC saturation
+- DOR breakdown: 83 Ag Current Use (8,370), 91 Undeveloped (3,088), 81 Agriculture (876)
+
+**Tri-Cities (WA)** — live at `/wa/study/tri/` (Benton + Franklin counties):
+- 9,848 viable parcels (>=5 ac, non-residential); data from WA State Current_Parcels service
+- Water score = 0.000 across all ZCTAs — Columbia River junior rights fully subscribed
+- Transmission access among best in WA: BPA McNary-Ashe 500kV corridor, all ZCTAs tx > 0.86
+- Top parcels: large agricultural blocks (480-680 ac, DOR 83) in Kennewick/Pasco plain
+- Hanford Nuclear Reservation absent from dataset (DOE land not in county assessor rolls)
+- DOR breakdown: 83 Ag Current Use (6,259), 81 Agriculture (1,512), 91 Undeveloped (1,005)
 
 ## Notebooks
 
