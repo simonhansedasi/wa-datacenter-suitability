@@ -1,7 +1,50 @@
-data/raw/
+# Python
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+
+# Deploy configs (machine-specific)
 deploy_do.sh
 nginx.conf
 datacenter_siting.service
+
+# All pipeline data — too large or re-downloadable by the pipeline
+# Exceptions below re-include the output artifacts
+data/**
+!data/*/
+!data/*/grid_scores.geojson
+!data/*/zcta/
+!data/*/zcta/grid_scores.geojson
+agent_army_learning_plan.md
+basement_remodel_contractors.md
+claude_harness_learning.md
+CLAUDE.md
+CONTEXT.md
+cover_letter_kc_parks_pia.md
+FDE.md
+gis_capability_summary.md
+gis_pitch_linkedin.md
+linkedin_cv_post.md
+madeleine_it_email.md
+merascope_alignment.md
+merascope_frontend_audit.md
+merascope_review.md
+PORTFOLIO_PLAN.md
+PROGRAM_STRATEGY.md
+repo_status.md
+RESUME_CONTEXT.md
+simon_voice.md
+supp_kc_parks_pia.md
+sync_instructions.md
+why-physics-works-essay.md
+why-physics-works-notes.md
+*.png
+*.gif
+*.jpg
+*.jpeg
+*.svg
+*.webp
+*.bmp
+*.tif
+*.tiff
+*.ico
